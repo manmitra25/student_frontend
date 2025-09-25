@@ -69,14 +69,18 @@ export default function WelcomePage() {
 
   const handleGetStarted = () => {
     if (user) {
-      setUser({ ...user, isNewUser: false });
+      const updatedUser = { ...user, isNewUser: false } as const;
+      localStorage.setItem('user', JSON.stringify(updatedUser));
+      setUser(updatedUser as any);
     }
     navigate('/dashboard');
   };
 
   const handleSkip = () => {
     if (user) {
-      setUser({ ...user, isNewUser: false });
+      const updatedUser = { ...user, isNewUser: false } as const;
+      localStorage.setItem('user', JSON.stringify(updatedUser));
+      setUser(updatedUser as any);
     }
     navigate('/dashboard');
   };

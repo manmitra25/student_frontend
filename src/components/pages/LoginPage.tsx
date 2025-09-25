@@ -46,15 +46,24 @@ export default function LoginPage() {
         if (token) {
           localStorage.setItem('token', token);
         }
-        // Set a minimal user context; in a real app, you may fetch profile next
-        setUser({
-          id: 'me',
-          email,
-          name: email.split('@')[0],
-          role: 'student',
-          college: 'unknown',
-        } as any);
-        navigate('/dashboard');
+
+        const userPayload = {
+          id: data?.user?.id || 'me',
+          email: data?.user?.email || email,
+          name: data?.user?.name || email.split('@')[0],
+          role: data?.user?.role === 'counsellor' ? 'counsellor' : 'student',
+          college: data?.user?.college || 'unknown',
+          isNewUser: data?.user?.isNewUser ?? false,
+        } as const;
+
+        localStorage.setItem('user', JSON.stringify(userPayload));
+        setUser(userPayload as any);
+
+        if (userPayload.isNewUser) {
+          navigate('/welcome');
+        } else {
+          navigate('/dashboard');
+        }
       }
     } catch (err: any) {
       const message = err?.response?.data?.message || 'Authentication failed. Please try again.';

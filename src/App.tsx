@@ -1,6 +1,6 @@
 import React from 'react';
 import { BrowserRouter as Router, Routes, Route, Navigate } from 'react-router-dom';
-import { useState, createContext, useContext } from 'react';
+import { useState, createContext, useContext, useCallback } from 'react';
 import './styles/globals.css';
 import { ThemeProvider } from './components/providers/ThemeProvider';
 
@@ -71,7 +71,41 @@ const PublicRoute = ({ children }: { children: React.ReactNode }) => {
 };
 
 export default function App() {
-  const [user, setUser] = useState<User | null>(null);
+  const [user, setUserState] = useState<User | null>(() => {
+    if (typeof window === 'undefined') {
+      return null;
+    }
+
+    const storedToken = window.localStorage.getItem('token');
+    const storedUser = window.localStorage.getItem('user');
+
+    if (!storedToken || !storedUser) {
+      return null;
+    }
+
+    try {
+      return JSON.parse(storedUser) as User;
+    } catch {
+      window.localStorage.removeItem('user');
+      return null;
+    }
+  });
+
+  const setUser = useCallback((value: User | null) => {
+    setUserState(value);
+
+    if (typeof window === 'undefined') {
+      return;
+    }
+
+    if (value) {
+      window.localStorage.setItem('user', JSON.stringify(value));
+    } else {
+      window.localStorage.removeItem('user');
+      window.localStorage.removeItem('token');
+    }
+  }, []);
+
   const isAuthenticated = user !== null;
 
   return (

@@ -117,12 +117,27 @@ export default function RegisterPage() {
         } else if (step === 3) {
           // Verify signup OTP and complete registration
           setIsLoading(true);
-          await API.post('/student/verify-signup', {
+          const { data } = await API.post('/student/verify-signup', {
             email: formData.email,
             otp: formData.verificationCode,
           });
-          // After successful verification, redirect to login
-          navigate('/login');
+
+          if (data?.token) {
+            localStorage.setItem('token', data.token);
+          }
+
+          const newUser = {
+            id: data?.user?.id || 'me',
+            email: data?.user?.email || formData.email,
+            name: data?.user?.name || formData.name,
+            role: data?.user?.role === 'counsellor' ? 'counsellor' : 'student',
+            college: data?.user?.college || formData.college,
+            isNewUser: true,
+          } as const;
+
+          localStorage.setItem('user', JSON.stringify(newUser));
+          setUser(newUser as any);
+          navigate('/welcome');
         } else {
           setStep(step + 1);
         }
