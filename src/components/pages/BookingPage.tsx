@@ -1,9 +1,10 @@
-import { useMemo, useState } from 'react';
+import { useCallback, useEffect, useMemo, useState } from 'react';
 import { Button } from '../ui/button';
 import { Card } from '../ui/card';
 import { Badge } from '../ui/badge';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '../ui/tabs';
 import {
+  AlertCircle,
   Calendar,
   Clock,
   Video,
@@ -14,7 +15,6 @@ import {
   MessageCircle,
   CheckCircle2,
   Filter,
-  Heart,
   Brain,
   Shield,
   Lock,
@@ -25,24 +25,8 @@ import {
   Search,
 } from 'lucide-react';
 import Navigation from '../shared/Navigation';
-
-type Counselor = {
-  id: string;
-  name: string;
-  title: string;
-  specializations: string[];
-  languages: string[];
-  rating: number;
-  reviews: number;
-  experience: string;
-  education: string;
-  approach: string;
-  about: string;
-  nextAvailable: string;
-  price: string;
-  sessionDuration: string;
-  verified: boolean;
-};
+import { getTherapists, Therapist } from '../../api/services/therapists';
+import LoadingSpinner from '../shared/LoadingSpinner';
 
 type UpcomingSession = {
   id: string;
@@ -66,63 +50,6 @@ type PastSession = {
   notes?: string;
   outcomes?: string[];
 };
-
-const counselors: Counselor[] = [
-  {
-    id: '1',
-    name: 'Dr. Priya Sharma',
-    title: 'Clinical Psychologist',
-    specializations: ['Anxiety', 'Depression', 'Academic Stress', 'PTSD'],
-    languages: ['English', 'Hindi', 'Marathi'],
-    rating: 4.9,
-    reviews: 127,
-    experience: '8 years',
-    education: 'PhD Psychology, AIIMS',
-    approach: 'Cognitive Behavioral Therapy, Mindfulness',
-    about:
-      'Dr. Sharma specializes in helping students navigate academic pressures and mental health challenges with evidence-based therapeutic approaches.',
-    nextAvailable: 'Today at 3:00 PM',
-    price: '₹800',
-    sessionDuration: '50 minutes',
-    verified: true,
-  },
-  {
-    id: '2',
-    name: 'Dr. Arjun Reddy',
-    title: 'Counseling Psychologist',
-    specializations: ['Career Guidance', 'Relationship Issues', 'Self-esteem', 'Life Transitions'],
-    languages: ['English', 'Telugu', 'Tamil'],
-    rating: 4.8,
-    reviews: 94,
-    experience: '6 years',
-    education: 'MA Psychology, University of Hyderabad',
-    approach: 'Person-Centered Therapy, Solution-Focused',
-    about:
-      'Dr. Reddy focuses on empowering young adults to build confidence and achieve their personal and academic goals.',
-    nextAvailable: 'Tomorrow at 11:00 AM',
-    price: '₹700',
-    sessionDuration: '45 minutes',
-    verified: true,
-  },
-  {
-    id: '3',
-    name: 'Dr. Meera Patel',
-    title: 'Licensed Therapist',
-    specializations: ['ADHD', 'Learning Disabilities', 'Study Skills', 'Autism Spectrum'],
-    languages: ['English', 'Gujarati', 'Hindi'],
-    rating: 4.9,
-    reviews: 156,
-    experience: '10 years',
-    education: 'PhD Special Education, TISS Mumbai',
-    approach: 'Behavioral Therapy, Educational Psychology',
-    about:
-      'Dr. Patel is an expert in learning differences and provides comprehensive academic support strategies.',
-    nextAvailable: 'Today at 5:30 PM',
-    price: '₹900',
-    sessionDuration: '60 minutes',
-    verified: true,
-  },
-];
 
 const upcomingSessions: UpcomingSession[] = [
   {
@@ -155,22 +82,42 @@ export default function BookingPage() {
   const [selectedTab, setSelectedTab] = useState<'book' | 'upcoming' | 'history'>('book');
   const [searchQuery, setSearchQuery] = useState('');
   const [showFilters, setShowFilters] = useState(false);
+  const [therapists, setTherapists] = useState<Therapist[]>([]);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
+
+  const fetchCounselors = useCallback(async () => {
+    try {
+      setLoading(true);
+      const data = await getTherapists();
+      setTherapists(data);
+      setError(null);
+    } catch (err) {
+      console.error('Failed to fetch therapists:', err);
+      setError('Unable to load counselors right now. Please try again.');
+    } finally {
+      setLoading(false);
+    }
+  }, []);
+
+  useEffect(() => {
+    fetchCounselors();
+  }, [fetchCounselors]);
 
   const filteredCounselors = useMemo(() => {
     if (!searchQuery.trim()) {
-      return counselors;
+      return therapists;
     }
 
     const query = searchQuery.toLowerCase();
-    return counselors.filter((counselor) => {
+    return therapists.filter((counselor) => {
       const matchesName = counselor.name.toLowerCase().includes(query);
-      const matchesTitle = counselor.title.toLowerCase().includes(query);
-      const matchesSpecs = counselor.specializations.some((spec) => spec.toLowerCase().includes(query));
-      const matchesLanguages = counselor.languages.some((language) => language.toLowerCase().includes(query));
+      const matchesSpec = counselor.specialization?.toLowerCase().includes(query);
+      const matchesLanguages = counselor.languages?.some((language) => language.toLowerCase().includes(query));
 
-      return matchesName || matchesTitle || matchesSpecs || matchesLanguages;
+      return matchesName || matchesSpec || matchesLanguages;
     });
-  }, [searchQuery]);
+  }, [searchQuery, therapists]);
 
   const renderSessionIcon = (type: UpcomingSession['type'] | PastSession['type']) => {
     if (type === 'video') {
@@ -294,7 +241,23 @@ export default function BookingPage() {
               </div>
             </Card>
 
-            {filteredCounselors.length === 0 ? (
+            {loading ? (
+              <Card className="border-0 shadow-sm bg-card dark:bg-slate-900 rounded-3xl">
+                <div className="p-12 text-center space-y-3">
+                  <LoadingSpinner size="lg" />
+                  <p className="text-sm text-muted-foreground">Loading counselors...</p>
+                </div>
+              </Card>
+            ) : error ? (
+              <Card className="border-0 shadow-sm bg-card dark:bg-slate-900 rounded-3xl">
+                <div className="p-12 text-center space-y-3">
+                  <AlertCircle className="h-12 w-12 mx-auto text-destructive" />
+                  <h3 className="text-lg font-semibold">Something went wrong</h3>
+                  <p className="text-sm text-muted-foreground">{error}</p>
+                  <Button onClick={fetchCounselors}>Retry</Button>
+                </div>
+              </Card>
+            ) : filteredCounselors.length === 0 ? (
               <Card className="border-0 shadow-sm bg-card dark:bg-slate-900 rounded-3xl">
                 <div className="p-12 text-center space-y-3">
                   <User className="h-12 w-12 mx-auto text-muted-foreground" />
@@ -307,7 +270,7 @@ export default function BookingPage() {
             ) : (
               <div className="grid grid-cols-1 gap-6 xl:grid-cols-2">
                 {filteredCounselors.map((counselor) => (
-                  <Card key={counselor.id} className="border border-border/60 shadow-sm bg-card dark:bg-slate-900 rounded-3xl h-full">
+                  <Card key={counselor._id} className="border border-border/60 shadow-sm bg-card dark:bg-slate-900 rounded-3xl h-full">
                     <div className="flex flex-col h-full p-6 space-y-6">
                       <div className="flex flex-col gap-6">
                         <div className="flex flex-col md:flex-row md:items-start md:gap-4">
@@ -318,31 +281,24 @@ export default function BookingPage() {
                             <div>
                               <div className="flex items-center gap-2">
                                 <h3 className="text-lg font-semibold leading-tight">{counselor.name}</h3>
-                                {counselor.verified && <UserCheck className="h-4 w-4 text-green-600" />}
+                                {counselor.isOnline && <UserCheck className="h-4 w-4 text-green-600" />}
                               </div>
-                              <p className="text-sm text-muted-foreground">{counselor.title}</p>
+                              <p className="text-sm text-muted-foreground">{counselor.specialization || 'Counselor'}</p>
                               <div className="mt-3 flex items-center gap-1">
                                 <Star className="h-4 w-4 text-yellow-500 fill-current" />
-                                <span className="text-sm font-medium">{counselor.rating}</span>
+                                <span className="text-sm font-medium">{counselor.rating?.toFixed(1)}</span>
                                 <span className="text-xs text-muted-foreground">({counselor.reviews} reviews)</span>
                               </div>
-                              <p className="text-sm font-medium text-primary mt-2">{counselor.price}/session</p>
                             </div>
                           </div>
 
                           <div className="flex-1 space-y-4">
-                            <p className="text-sm text-muted-foreground leading-relaxed">{counselor.about}</p>
-
                             <div className="space-y-2">
-                              <p className="text-xs font-semibold text-muted-foreground uppercase tracking-wide">Specializations</p>
+                              <p className="text-xs font-semibold text-muted-foreground uppercase tracking-wide">Languages</p>
                               <div className="flex flex-wrap gap-2">
-                                {counselor.specializations.map((spec) => (
-                                  <Badge
-                                    key={spec}
-                                    variant="outline"
-                                    className="text-xs bg-blue-50 text-blue-700 border-blue-300 dark:bg-blue-900/30 dark:text-blue-200 dark:border-blue-800"
-                                  >
-                                    {spec}
+                                {(counselor.languages || ['English']).map((language) => (
+                                  <Badge key={language} variant="outline" className="text-xs">
+                                    {language}
                                   </Badge>
                                 ))}
                               </div>
@@ -351,19 +307,19 @@ export default function BookingPage() {
                             <div className="grid grid-cols-1 gap-3 text-xs text-muted-foreground sm:grid-cols-2">
                               <div className="flex items-center gap-2">
                                 <GraduationCap className="h-3 w-3" />
-                                <span>{counselor.education}</span>
+                                <span>{counselor.experience || 'Experience shared during consultation'}</span>
                               </div>
                               <div className="flex items-center gap-2">
                                 <Brain className="h-3 w-3" />
-                                <span>{counselor.approach}</span>
+                                <span>{counselor.specialization || 'Holistic counseling'}</span>
                               </div>
                               <div className="flex items-center gap-2">
                                 <Clock className="h-3 w-3" />
-                                <span>{counselor.sessionDuration} sessions</span>
+                                <span>{counselor.availability?.[0] || 'Flexible availability'}</span>
                               </div>
                               <div className="flex items-center gap-2">
                                 <Languages className="h-3 w-3" />
-                                <span>{counselor.languages.join(', ')}</span>
+                                <span>{counselor.languages?.join(', ') || 'English'}</span>
                               </div>
                             </div>
                           </div>
@@ -373,15 +329,17 @@ export default function BookingPage() {
                       <div className="flex flex-col gap-4 border-t border-border pt-6 sm:flex-row sm:items-center sm:justify-between">
                         <div>
                           <p className="text-sm font-medium">Next Available:</p>
-                          <p className="text-sm text-green-600 dark:text-green-400">{counselor.nextAvailable}</p>
-                          <div className="mt-3 flex flex-wrap gap-2">
-                            {['Today 3:00 PM', 'Tomorrow 11:00 AM', 'Friday 4:00 PM'].map((slot) => (
-                              <Badge key={`${counselor.id}-${slot}`} variant="outline" className="text-xs">
-                                <Clock className="h-3 w-3 mr-1" />
-                                {slot}
-                              </Badge>
-                            ))}
-                          </div>
+                          <p className="text-sm text-green-600 dark:text-green-400">{counselor.availability?.[0] || 'Contact for schedule'}</p>
+                          {counselor.availability && counselor.availability.length > 1 && (
+                            <div className="mt-3 flex flex-wrap gap-2">
+                              {counselor.availability.slice(0, 3).map((slot, index) => (
+                                <Badge key={`${counselor._id}-${index}`} variant="outline" className="text-xs">
+                                  <Clock className="h-3 w-3 mr-1" />
+                                  {slot}
+                                </Badge>
+                              ))}
+                            </div>
+                          )}
                         </div>
 
                         <div className="flex w-full flex-col gap-3 sm:w-auto sm:flex-row">

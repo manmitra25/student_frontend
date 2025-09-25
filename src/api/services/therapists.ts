@@ -1,35 +1,54 @@
 import API from "../axios";
 
+// Frontend-friendly Therapist interface
 export interface Therapist {
   _id: string;
   name: string;
   email: string;
-  specialization?: string;
-  experience: string; // frontend default if backend doesn't provide
-  languages: string[]; // frontend default
-  rating: number;      // frontend default
-  reviews: number;     // frontend default
-  isOnline: boolean;   // frontend default
-  availability: string[]; // frontend default
+  specialization: string;
+  experience: string;
+  languages: string[];
+  rating: number;
+  reviews: number;
+  isOnline: boolean;
+  availability: string[]; // Flattened ["2025-09-25 10:00 AM", ...]
 }
 
+// API call to fetch therapists
 export async function getTherapists(): Promise<Therapist[]> {
-  const { data } = await API.get<any>("/student/therapists");
+  try {
+    const { data } = await API.get("/student/therapists");
 
-  // normalize response
-  const rawTherapists: any[] = Array.isArray(data) ? data : data?.therapists || [];
+    // Handle cases where backend may return an object or array
+    const rawTherapists: any[] = Array.isArray(data)
+      ? data
+      : data?.therapists || [];
 
-  // map backend data to frontend Therapist interface with defaults
-  return rawTherapists.map(t => ({
-    _id: t._id,
-    name: t.name,
-    email: t.email,
-    specialization: t.specialization || "General Counseling",
-    experience: t.experience || `${Math.floor(Math.random() * 10) + 3} years`, // random 3-12 yrs if missing
-    languages: t.languages || ["English"], 
-    rating: t.rating ?? (Math.random() * (5 - 4.5) + 4.5), // random 4.5 - 5
-    reviews: t.reviews ?? Math.floor(Math.random() * 100) + 20, 
-    isOnline: t.isOnline ?? true,
-    availability: t.availability || ["Today 10:00 AM", "Tomorrow 2:00 PM"]
-  }));
+    return rawTherapists.map((t: any) => {
+      // Ensure availability formatting
+      const availability: string[] =
+        t.availability?.map((slot: any) => {
+          const dateStr = new Date(slot.date).toLocaleDateString();
+          return slot.times?.map((time: string) => `${dateStr} ${time}`) || [];
+        }).flat() || [];
+
+      return {
+        _id: t._id,
+        name: t.name || "Unknown Therapist",
+        email: t.email || "",
+        specialization: t.specialization || "General Counseling",
+        experience: t.experience || `${Math.floor(Math.random() * 5) + 3} years`, // Default 3–7 years
+        languages: t.languages || ["English"], // Hardcoded fallback
+        rating: t.rating ?? parseFloat((Math.random() * (5 - 4.5) + 4.5).toFixed(1)), // Default ~4.5–5.0
+        reviews: t.reviews ?? Math.floor(Math.random() * 100) + 20, // Default 20–120 reviews
+        isOnline: t.isOnline ?? Math.random() > 0.3, // Default ~70% chance online
+        availability: availability.length > 0
+          ? availability
+          : ["Today 10:00 AM", "Tomorrow 2:00 PM"], // Hardcoded fallback
+      };
+    });
+  } catch (error) {
+    console.error("Failed to fetch therapists:", error);
+    return []; // Graceful fallback
+  }
 }
