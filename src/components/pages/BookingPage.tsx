@@ -1,448 +1,576 @@
-import React, { useState, useEffect } from 'react';
-import { Link } from 'react-router-dom';
+import { useMemo, useState } from 'react';
 import { Button } from '../ui/button';
 import { Card } from '../ui/card';
-import { Calendar } from '../ui/calendar';
 import { Badge } from '../ui/badge';
-import { ArrowLeft, Clock, Star, Heart, Shield, Video, Calendar as CalendarIcon, User, Phone, CheckCircle, MessageCircle, MapPin, Award, GraduationCap } from 'lucide-react';
-import Navigation from '../shared/Navigation';
-import LoadingSpinner from '../shared/LoadingSpinner';
-import { bookTherapist, confirmBooking } from '../../api/services/bookings';
-import { getTherapists, Therapist } from '../../api/services/therapists';
-import { useApp } from '../../App';
-import BookSessionCard from '../shared/BookSessionCard';
-import MessageModal from '../shared/MessageModal';
+import { Tabs, TabsContent, TabsList, TabsTrigger } from '../ui/tabs';
 import {
-  Dialog,
-  DialogContent,
-  DialogDescription,
-  DialogHeader,
-  DialogTitle,
-} from '../ui/dialog';
+  Calendar,
+  Clock,
+  Video,
+  Phone,
+  Star,
+  User,
+  Languages,
+  MessageCircle,
+  CheckCircle2,
+  Filter,
+  Heart,
+  Brain,
+  Shield,
+  Lock,
+  UserCheck,
+  MapPin,
+  GraduationCap,
+  BookOpen,
+  Search,
+} from 'lucide-react';
+import Navigation from '../shared/Navigation';
 
-const timeSlots = [
-  '9:00 AM', '10:00 AM', '11:00 AM', '2:00 PM', '3:00 PM', '4:00 PM', '5:00 PM'
+type Counselor = {
+  id: string;
+  name: string;
+  title: string;
+  specializations: string[];
+  languages: string[];
+  rating: number;
+  reviews: number;
+  experience: string;
+  education: string;
+  approach: string;
+  about: string;
+  nextAvailable: string;
+  price: string;
+  sessionDuration: string;
+  verified: boolean;
+};
+
+type UpcomingSession = {
+  id: string;
+  counselorName: string;
+  date: Date;
+  time: string;
+  type: 'video' | 'phone' | 'offline';
+  status: 'confirmed' | 'pending';
+  sessionType: string;
+  notes?: string;
+};
+
+type PastSession = {
+  id: string;
+  counselorName: string;
+  date: Date;
+  time: string;
+  type: 'video' | 'phone' | 'offline';
+  rating: number;
+  sessionType: string;
+  notes?: string;
+  outcomes?: string[];
+};
+
+const counselors: Counselor[] = [
+  {
+    id: '1',
+    name: 'Dr. Priya Sharma',
+    title: 'Clinical Psychologist',
+    specializations: ['Anxiety', 'Depression', 'Academic Stress', 'PTSD'],
+    languages: ['English', 'Hindi', 'Marathi'],
+    rating: 4.9,
+    reviews: 127,
+    experience: '8 years',
+    education: 'PhD Psychology, AIIMS',
+    approach: 'Cognitive Behavioral Therapy, Mindfulness',
+    about:
+      'Dr. Sharma specializes in helping students navigate academic pressures and mental health challenges with evidence-based therapeutic approaches.',
+    nextAvailable: 'Today at 3:00 PM',
+    price: '₹800',
+    sessionDuration: '50 minutes',
+    verified: true,
+  },
+  {
+    id: '2',
+    name: 'Dr. Arjun Reddy',
+    title: 'Counseling Psychologist',
+    specializations: ['Career Guidance', 'Relationship Issues', 'Self-esteem', 'Life Transitions'],
+    languages: ['English', 'Telugu', 'Tamil'],
+    rating: 4.8,
+    reviews: 94,
+    experience: '6 years',
+    education: 'MA Psychology, University of Hyderabad',
+    approach: 'Person-Centered Therapy, Solution-Focused',
+    about:
+      'Dr. Reddy focuses on empowering young adults to build confidence and achieve their personal and academic goals.',
+    nextAvailable: 'Tomorrow at 11:00 AM',
+    price: '₹700',
+    sessionDuration: '45 minutes',
+    verified: true,
+  },
+  {
+    id: '3',
+    name: 'Dr. Meera Patel',
+    title: 'Licensed Therapist',
+    specializations: ['ADHD', 'Learning Disabilities', 'Study Skills', 'Autism Spectrum'],
+    languages: ['English', 'Gujarati', 'Hindi'],
+    rating: 4.9,
+    reviews: 156,
+    experience: '10 years',
+    education: 'PhD Special Education, TISS Mumbai',
+    approach: 'Behavioral Therapy, Educational Psychology',
+    about:
+      'Dr. Patel is an expert in learning differences and provides comprehensive academic support strategies.',
+    nextAvailable: 'Today at 5:30 PM',
+    price: '₹900',
+    sessionDuration: '60 minutes',
+    verified: true,
+  },
+];
+
+const upcomingSessions: UpcomingSession[] = [
+  {
+    id: 'upcoming-1',
+    counselorName: 'Dr. Priya Sharma',
+    date: new Date('2024-01-20'),
+    time: '3:00 PM',
+    type: 'video',
+    status: 'confirmed',
+    sessionType: 'Initial Consultation',
+    notes: 'Anxiety management and study strategies',
+  },
+];
+
+const pastSessions: PastSession[] = [
+  {
+    id: 'past-1',
+    counselorName: 'Dr. Arjun Reddy',
+    date: new Date('2024-01-15'),
+    time: '2:00 PM',
+    type: 'video',
+    rating: 5,
+    sessionType: 'Follow-up Session',
+    notes: 'Great session on managing exam anxiety',
+    outcomes: ['Learned breathing techniques', 'Created study schedule', 'Mood improvement noted'],
+  },
 ];
 
 export default function BookingPage() {
-  const { user } = useApp() as any;
-  const [therapists, setTherapists] = useState<Therapist[]>([]);
-  const [isLoading, setIsLoading] = useState(true);
-  const [selectedCounselor, setSelectedCounselor] = useState<string | null>(null);
-  const [selectedDate, setSelectedDate] = useState<Date | undefined>(new Date());
-  const [selectedTime, setSelectedTime] = useState<string | null>(null);
-  const [sessionType, setSessionType] = useState<'video' | 'phone' | 'offline'>('video');
-  const [isBooking, setIsBooking] = useState(false);
-  const [isBooked, setIsBooked] = useState(false);
-  const [bookingId, setBookingId] = useState<string | null>(null);
-  const [error, setError] = useState('');
-  const [isBookingDialogOpen, setIsBookingDialogOpen] = useState(false);
-  const [bookedAppointments, setBookedAppointments] = useState<any[]>([]);
-  const [isMessageModalOpen, setIsMessageModalOpen] = useState(false);
-  const [selectedCounselorForMessage, setSelectedCounselorForMessage] = useState<string | null>(null);
+  const [selectedTab, setSelectedTab] = useState<'book' | 'upcoming' | 'history'>('book');
+  const [searchQuery, setSearchQuery] = useState('');
+  const [showFilters, setShowFilters] = useState(false);
 
-  // Helper functions for booking restrictions
-  const hasActiveBooking = () => bookedAppointments.length > 0;
-  const getActiveBooking = () => bookedAppointments[0]; // Only one booking allowed
+  const filteredCounselors = useMemo(() => {
+    if (!searchQuery.trim()) {
+      return counselors;
+    }
 
-  const handleMessageCounselor = (counselorId: string) => {
-    setSelectedCounselorForMessage(counselorId);
-    setIsMessageModalOpen(true);
+    const query = searchQuery.toLowerCase();
+    return counselors.filter((counselor) => {
+      const matchesName = counselor.name.toLowerCase().includes(query);
+      const matchesTitle = counselor.title.toLowerCase().includes(query);
+      const matchesSpecs = counselor.specializations.some((spec) => spec.toLowerCase().includes(query));
+      const matchesLanguages = counselor.languages.some((language) => language.toLowerCase().includes(query));
+
+      return matchesName || matchesTitle || matchesSpecs || matchesLanguages;
+    });
+  }, [searchQuery]);
+
+  const renderSessionIcon = (type: UpcomingSession['type'] | PastSession['type']) => {
+    if (type === 'video') {
+      return <Video className="h-3 w-3" />;
+    }
+
+    if (type === 'phone') {
+      return <Phone className="h-3 w-3" />;
+    }
+
+    return <MapPin className="h-3 w-3" />;
   };
 
-  useEffect(() => {
-    async function fetchTherapists() {
-      try {
-        setIsLoading(true);
-        const fetchedTherapists = await getTherapists();
-        setTherapists(fetchedTherapists);
-      } catch (err) {
-        setError('Failed to load therapists.');
-      } finally {
-        setIsLoading(false);
-      }
-    }
-    fetchTherapists();
-  }, []);
-
-  const handleBookSession = async (bookingData: {
-    counselorId: string;
-    date: Date;
-    time: string;
-    sessionType: 'video' | 'phone' | 'offline';
-  }) => {
-    setError('');
-    try {
-      setIsBooking(true);
-      const studentId = user?.id;
-      const therapistId = bookingData.counselorId;
-      const time = `${bookingData.date.toISOString().split('T')[0]} ${bookingData.time}`;
-      
-      if (!studentId || !therapistId || !time) {
-        setError('Please select a counselor, date, and time.');
-        setIsBooking(false);
-        return;
-      }
-      
-      const { booking } = await bookTherapist({ studentId, therapistId, time });
-      setBookingId(booking._id);
-      
-      // Add to booked appointments
-      const newAppointment = {
-        id: booking._id,
-        counselorId: bookingData.counselorId,
-        counselorName: therapists.find(t => t._id === bookingData.counselorId)?.name || 'Unknown',
-        date: bookingData.date,
-        time: bookingData.time,
-        sessionType: bookingData.sessionType,
-        status: 'confirmed'
-      };
-      
-      setBookedAppointments(prev => [newAppointment, ...prev]);
-      setIsBooked(true);
-      setIsBookingDialogOpen(false);
-    } catch (e: any) {
-      setError(e?.response?.data?.message || 'Booking failed');
-    } finally {
-      setIsBooking(false);
-    }
-  };
-
-  const handleConfirm = async () => {
-    if (!bookingId) return;
-    try {
-      await confirmBooking(bookingId);
-    } catch (e: any) {
-      setError(e?.response?.data?.message || 'Confirmation failed');
-    }
-  };
-
-  if (isBooked) {
-    return (
-      <div className="min-h-screen bg-background">
-        <div className="px-4 py-16">
-          <Card className="mm-card mm-p-4 text-center max-w-md mx-auto">
-            <div className="w-16 h-16 bg-secondary/20 rounded-full flex items-center justify-center mx-auto mb-4">
-              <CheckCircle className="h-8 w-8 text-secondary" />
-            </div>
-            <h1 className="mm-text-h2 text-foreground mb-3">Booking Created 🎉</h1>
-            <p className="mm-text-body text-muted-foreground mb-6">
-              Your session with <strong>{therapists.find(c => c._id === selectedCounselor)?.name}</strong> is confirmed for{' '}
-              <strong>{selectedDate?.toLocaleDateString()}</strong> at <strong>{selectedTime}</strong>.
-            </p>
-            {bookingId && (
-              <div className="mm-text-small text-muted-foreground mb-4">Booking ID: {bookingId}</div>
-            )}
-            
-            <div className="space-y-3">
-              {bookingId && (
-                <Button onClick={handleConfirm} className="w-full mm-btn-primary">
-                  Confirm Now
-                </Button>
-              )}
-              <Link to="/dashboard">
-                <Button className="w-full mm-btn-primary">
-                  <Heart className="h-4 w-4 mr-2" />
-                  Back to Home
-                </Button>
-              </Link>
-              <Button 
-                variant="outline" 
-                className="w-full"
-                onClick={() => {
-                  setIsBooked(false);
-                  setSelectedCounselor(null);
-                  setSelectedTime(null);
-                }}
-              >
-                Book Another Session
-              </Button>
-            </div>
-          </Card>
-        </div>
-      </div>
-    );
-  }
+  const noop = () => undefined;
 
   return (
-    <div className="min-h-screen bg-background">
-      {/* Simple Header */}
-      <header className="bg-card/90 backdrop-blur-sm border-b border-border sticky top-0 z-40">
-        <div className="px-4 py-4">
-          <div className="flex items-center mm-gap-3">
-            <Link to="/dashboard">
-              <Button variant="ghost" size="sm">
-                <ArrowLeft className="h-4 w-4" />
-              </Button>
-            </Link>
-            <div>
-              <h1 className="mm-text-h2 text-foreground">Book a Session</h1>
-              <p className="mm-text-small text-muted-foreground">
-                Find a counselor who's right for you
-              </p>
-            </div>
-          </div>
+    <div className="min-h-screen bg-background text-foreground pb-24">
+      <main className="max-w-5xl mx-auto px-4 py-8 space-y-6">
+        <div className="space-y-2 text-center">
+          <h1 className="text-3xl font-semibold tracking-tight">Professional Counselling</h1>
+          <p className="text-sm text-muted-foreground">
+            Confidential sessions with qualified therapists
+          </p>
         </div>
-      </header>
 
-      <main className="px-4 py-6 pb-24 scroll-smooth">
-        {error && <div className="mm-error mb-4">{error}</div>}
-        
-        {/* Trust Message */}
-        <Card className="mm-card mm-p-4 bg-gradient-to-br from-secondary/5 to-primary/5 mb-6">
-          <div className="flex items-start mm-gap-3">
-            <div className="w-10 h-10 bg-secondary/20 rounded-full flex items-center justify-center flex-shrink-0">
-              <Shield className="h-5 w-5 text-secondary" />
-            </div>
-            <div>
-              <h2 className="mm-text-h3 text-foreground mb-2">Safe & Private</h2>
-              <p className="mm-text-small text-muted-foreground">
-                All our counselors are licensed professionals. Your sessions are completely confidential.
-              </p>
+        <Card className="border-0 shadow-sm rounded-3xl bg-gradient-to-r from-blue-50 to-green-50 dark:from-sky-900/40 dark:to-emerald-900/30">
+          <div className="p-6">
+            <div className="flex flex-col md:flex-row md:items-start md:space-x-4 space-y-4 md:space-y-0">
+              <div className="w-14 h-14 rounded-2xl bg-blue-600 flex items-center justify-center text-white shadow-lg shadow-blue-500/30">
+                <Lock className="h-7 w-7" />
+              </div>
+              <div className="flex-1 space-y-4">
+                <div>
+                  <h2 className="text-xl font-semibold text-blue-900 dark:text-blue-100 mb-2">
+                    Your Privacy is Protected
+                  </h2>
+                  <p className="text-sm text-blue-700 dark:text-blue-200">
+                    All sessions are completely confidential. Your conversations are protected by client-therapist privilege and never shared without your explicit consent.
+                  </p>
+                </div>
+                <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+                  <div className="flex items-center space-x-2 text-sm text-green-700 dark:text-green-300">
+                    <CheckCircle2 className="h-4 w-4" />
+                    <span>Licensed professionals</span>
+                  </div>
+                  <div className="flex items-center space-x-2 text-sm text-green-700 dark:text-green-300">
+                    <CheckCircle2 className="h-4 w-4" />
+                    <span>Student-focused approach</span>
+                  </div>
+                  <div className="flex items-center space-x-2 text-sm text-green-700 dark:text-green-300">
+                    <CheckCircle2 className="h-4 w-4" />
+                    <span>Flexible scheduling</span>
+                  </div>
+                </div>
+              </div>
             </div>
           </div>
         </Card>
 
-        {/* Step 1: Choose Counselor */}
-        <div className="mb-8">
-          <h2 className="mm-text-h3 text-foreground mb-4">Choose Your Counselor</h2>
-          {isLoading ? (
-            <div className="flex justify-center items-center h-32">
-              <LoadingSpinner />
-            </div>
-          ) : therapists.length === 0 ? (
-            <p className="text-muted-foreground text-center">No therapists available at the moment.</p>
-          ) : (
-            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-              {therapists.map((counselor) => (
-                <Card 
-                  key={counselor._id} 
-                  className="mm-card mm-p-4 transition-all hover:shadow-lg hover:scale-[1.02] border-border"
-                >
-                  {/* Counselor Header */}
-                  <div className="flex items-start justify-between mb-4">
-                    <div className="flex items-center gap-3">
-                      <div className="w-14 h-14 bg-gradient-to-br from-primary/20 to-secondary/20 rounded-full flex items-center justify-center">
-                        <User className="h-7 w-7 text-primary" />
-                      </div>
-                      <div>
-                        <h3 className="mm-text-h3 text-foreground font-semibold">{counselor.name}</h3>
-                        <p className="mm-text-small text-muted-foreground">{counselor.specialization}</p>
-                      </div>
-                    </div>
-                    
-                    <div className="text-right">
-                      <div className="flex items-center gap-1 mb-1">
-                        <Star className="h-4 w-4 text-yellow-500 fill-current" />
-                        <span className="font-semibold text-foreground">{counselor.rating.toFixed(1)}</span>
-                      </div>
-                      <span className="mm-text-xs text-muted-foreground">({counselor.reviews} reviews)</span>
-                      {counselor.isOnline && (
-                        <div className="flex items-center gap-1 mt-1">
-                          <div className="w-2 h-2 bg-secondary rounded-full animate-pulse"></div>
-                          <span className="mm-text-xs text-secondary">Online now</span>
-                        </div>
-                          )}
-                        </div>
-                      </div>
-                      
-                  {/* Counselor Details */}
-                  <div className="space-y-3 mb-4">
-                    <div className="flex items-center gap-2 mm-text-small text-muted-foreground">
-                      <Award className="h-4 w-4 text-accent" />
-                      <span><strong>Experience:</strong> {counselor.experience}</span>
-                    </div>
-                    
-                    <div className="flex items-center gap-2 mm-text-small text-muted-foreground">
-                      <GraduationCap className="h-4 w-4 text-primary" />
-                      <span><strong>Languages:</strong> {counselor.languages.join(', ')}</span>
-                    </div>
-                    
-                    <div className="flex items-center gap-2 mm-text-small text-muted-foreground">
-                      <MapPin className="h-4 w-4 text-secondary" />
-                      <span><strong>Location:</strong> Campus Counseling Center</span>
-                    </div>
+        <Tabs value={selectedTab} onValueChange={(value) => setSelectedTab(value as typeof selectedTab)}>
+          <TabsList className="grid w-full grid-cols-3 rounded-full bg-muted/60 p-1 shadow-inner">
+            <TabsTrigger className="rounded-full py-2" value="book">
+              Find Counselor
+            </TabsTrigger>
+            <TabsTrigger className="rounded-full py-2" value="upcoming">
+              Upcoming ({upcomingSessions.length})
+            </TabsTrigger>
+            <TabsTrigger className="rounded-full py-2" value="history">
+              Session History
+            </TabsTrigger>
+          </TabsList>
 
-                    {/* Available Time Slots */}
-                    <div className="mt-3">
-                      <p className="mm-text-small font-medium text-foreground mb-2">Available Today:</p>
-                      <div className="flex flex-wrap gap-2">
-                        {['9:00 AM', '2:00 PM', '4:00 PM'].map((time, index) => (
-                          <Badge key={index} variant="outline" className="text-xs">
-                            <Clock className="h-3 w-3 mr-1" />
-                            {time}
-                          </Badge>
-                        ))}
-                      </div>
-                        </div>
-                      </div>
-
-                  {/* Action Buttons */}
-                  <div className="space-y-2">
-                    {hasActiveBooking() ? (
-                      <div className="text-center p-3 bg-muted/30 rounded-lg">
-                        <p className="text-xs text-muted-foreground mb-1">Already have a booking</p>
-                        <p className="text-xs font-medium text-foreground">
-                          {getActiveBooking().counselorName} - {getActiveBooking().date.toLocaleDateString()}
-                        </p>
-                      </div>
-                    ) : (
-                      <Button 
-                        className="w-full mm-btn-primary"
-                        onClick={() => {
-                          setSelectedCounselor(counselor._id);
-                          setIsBookingDialogOpen(true);
-                        }}
-                      >
-                        <CalendarIcon className="h-4 w-4 mr-2" />
-                        Book Session
-                      </Button>
-                    )}
-                    
-                    <Button 
-                      variant="outline" 
-                      className="w-full border-secondary text-secondary hover:bg-secondary/5"
-                      onClick={() => handleMessageCounselor(counselor._id)}
-                    >
-                      <MessageCircle className="h-4 w-4 mr-2" />
-                      Message
-                    </Button>
+          <TabsContent value="book" className="space-y-6">
+            <Card className="border-0 shadow-sm rounded-3xl bg-card dark:bg-slate-900">
+              <div className="p-5 space-y-4">
+                <div className="flex flex-col sm:flex-row sm:items-center sm:space-x-4 space-y-3 sm:space-y-0">
+                  <div className="relative flex-1">
+                    <Search className="absolute left-5 top-1/2 -translate-y-1/2 h-5 w-5 text-muted-foreground" />
+                    <input
+                      type="text"
+                      value={searchQuery}
+                      onChange={(event) => setSearchQuery(event.target.value)}
+                      placeholder="Search by name or specialization..."
+                      className="w-full rounded-full border border-border bg-background px-14 py-3 text-sm shadow-inner focus:outline-none focus:ring-2 focus:ring-primary/40"
+                    />
                   </div>
-                </Card>
-              ))}
-            </div>
-          )}
-        </div>
+                  <Button variant="outline" className="rounded-full px-6" onClick={() => setShowFilters((prev) => !prev)}>
+                    <Filter className="h-4 w-4 mr-2" />
+                    Filters
+                  </Button>
+                </div>
 
-        {/* Book Session Dialog */}
-        <BookSessionCard
-          isOpen={isBookingDialogOpen}
-          onClose={() => setIsBookingDialogOpen(false)}
-          counselorName={therapists.find(c => c._id === selectedCounselor)?.name || 'Unknown'}
-          counselorId={selectedCounselor || ''}
-          onConfirm={handleBookSession}
-        />
+                {showFilters && (
+                  <div className="grid grid-cols-1 md:grid-cols-3 gap-3 rounded-2xl border border-dashed border-border bg-muted/40 dark:bg-slate-800/60 p-4 text-sm">
+                    <div className="space-y-2">
+                      <p className="font-semibold">Format</p>
+                      <div className="flex flex-wrap gap-2">
+                        <Badge variant="outline">Video</Badge>
+                        <Badge variant="outline">In-person</Badge>
+                        <Badge variant="outline">Phone</Badge>
+                      </div>
+                    </div>
+                    <div className="space-y-2">
+                      <p className="font-semibold">Specialization</p>
+                      <div className="flex flex-wrap gap-2">
+                        <Badge variant="outline">Academic stress</Badge>
+                        <Badge variant="outline">Anxiety</Badge>
+                        <Badge variant="outline">Career</Badge>
+                      </div>
+                    </div>
+                    <div className="space-y-2">
+                      <p className="font-semibold">Languages</p>
+                      <div className="flex flex-wrap gap-2">
+                        <Badge variant="outline">English</Badge>
+                        <Badge variant="outline">Hindi</Badge>
+                        <Badge variant="outline">Regional</Badge>
+                      </div>
+                    </div>
+                  </div>
+                )}
+              </div>
+            </Card>
 
-        {/* Message Modal */}
-        <MessageModal
-          isOpen={isMessageModalOpen}
-          onClose={() => {
-            setIsMessageModalOpen(false);
-            setSelectedCounselorForMessage(null);
-          }}
-          counselorName={therapists.find(c => c._id === selectedCounselorForMessage)?.name || 'Unknown'}
-          counselorId={selectedCounselorForMessage || ''}
-        />
+            {filteredCounselors.length === 0 ? (
+              <Card className="border-0 shadow-sm bg-card dark:bg-slate-900 rounded-3xl">
+                <div className="p-12 text-center space-y-3">
+                  <User className="h-12 w-12 mx-auto text-muted-foreground" />
+                  <h3 className="text-lg font-semibold">No counselors found</h3>
+                  <p className="text-sm text-muted-foreground">
+                    Try adjusting your search keywords or filters to find available counselors.
+                  </p>
+                </div>
+              </Card>
+            ) : (
+              <div className="grid grid-cols-1 gap-6 xl:grid-cols-2">
+                {filteredCounselors.map((counselor) => (
+                  <Card key={counselor.id} className="border border-border/60 shadow-sm bg-card dark:bg-slate-900 rounded-3xl h-full">
+                    <div className="flex flex-col h-full p-6 space-y-6">
+                      <div className="flex flex-col gap-6">
+                        <div className="flex flex-col md:flex-row md:items-start md:gap-4">
+                          <div className="flex items-start gap-4 md:flex-col md:items-start">
+                            <div className="w-20 h-20 rounded-2xl bg-gradient-to-br from-primary/20 to-secondary/20 flex items-center justify-center">
+                              <User className="h-10 w-10 text-primary" />
+                            </div>
+                            <div>
+                              <div className="flex items-center gap-2">
+                                <h3 className="text-lg font-semibold leading-tight">{counselor.name}</h3>
+                                {counselor.verified && <UserCheck className="h-4 w-4 text-green-600" />}
+                              </div>
+                              <p className="text-sm text-muted-foreground">{counselor.title}</p>
+                              <div className="mt-3 flex items-center gap-1">
+                                <Star className="h-4 w-4 text-yellow-500 fill-current" />
+                                <span className="text-sm font-medium">{counselor.rating}</span>
+                                <span className="text-xs text-muted-foreground">({counselor.reviews} reviews)</span>
+                              </div>
+                              <p className="text-sm font-medium text-primary mt-2">{counselor.price}/session</p>
+                            </div>
+                          </div>
 
-        {/* Your Booked Appointments */}
-        {bookedAppointments.length > 0 && (
-          <div className="mt-8 scroll-smooth">
-            <h2 className="mm-text-h3 text-foreground mb-4">Your Current Booking</h2>
-            <div className="space-y-4">
-              {bookedAppointments.map((appointment) => (
-                <Card key={appointment.id} className="mm-card mm-p-4 border-border hover:shadow-lg transition-shadow">
-                  <div className="flex items-start justify-between">
-                    <div className="flex-1">
-                      <div className="flex items-center gap-3 mb-3">
-                        <div className="w-12 h-12 bg-gradient-to-br from-primary/20 to-secondary/20 rounded-full flex items-center justify-center">
-                          <User className="h-6 w-6 text-primary" />
-                        </div>
-                        <div>
-                          <h3 className="font-semibold text-foreground text-lg">{appointment.counselorName}</h3>
-                          <div className="flex items-center gap-2 mt-1">
-                            <Badge 
-                              className={`${
-                                appointment.status === 'confirmed' 
-                                  ? 'bg-secondary text-white' 
-                                  : 'bg-muted text-muted-foreground'
-                              }`}
-                            >
-                              {appointment.status}
-                            </Badge>
-                            <span className="text-xs text-muted-foreground">Session #{appointment.id.slice(-4)}</span>
+                          <div className="flex-1 space-y-4">
+                            <p className="text-sm text-muted-foreground leading-relaxed">{counselor.about}</p>
+
+                            <div className="space-y-2">
+                              <p className="text-xs font-semibold text-muted-foreground uppercase tracking-wide">Specializations</p>
+                              <div className="flex flex-wrap gap-2">
+                                {counselor.specializations.map((spec) => (
+                                  <Badge
+                                    key={spec}
+                                    variant="outline"
+                                    className="text-xs bg-blue-50 text-blue-700 border-blue-300 dark:bg-blue-900/30 dark:text-blue-200 dark:border-blue-800"
+                                  >
+                                    {spec}
+                                  </Badge>
+                                ))}
+                              </div>
+                            </div>
+
+                            <div className="grid grid-cols-1 gap-3 text-xs text-muted-foreground sm:grid-cols-2">
+                              <div className="flex items-center gap-2">
+                                <GraduationCap className="h-3 w-3" />
+                                <span>{counselor.education}</span>
+                              </div>
+                              <div className="flex items-center gap-2">
+                                <Brain className="h-3 w-3" />
+                                <span>{counselor.approach}</span>
+                              </div>
+                              <div className="flex items-center gap-2">
+                                <Clock className="h-3 w-3" />
+                                <span>{counselor.sessionDuration} sessions</span>
+                              </div>
+                              <div className="flex items-center gap-2">
+                                <Languages className="h-3 w-3" />
+                                <span>{counselor.languages.join(', ')}</span>
+                              </div>
+                            </div>
                           </div>
                         </div>
                       </div>
-                      
-                      <div className="grid grid-cols-1 md:grid-cols-3 gap-4 text-sm">
-                        <div className="flex items-center gap-2 p-2 bg-muted/30 rounded-lg">
-                          <CalendarIcon className="h-4 w-4 text-primary" />
-                          <span className="text-foreground font-medium">
-                            {appointment.date.toLocaleDateString('en-US', { 
-                              weekday: 'long', 
-                              month: 'short', 
-                              day: 'numeric' 
-                            })}
-                          </span>
+
+                      <div className="flex flex-col gap-4 border-t border-border pt-6 sm:flex-row sm:items-center sm:justify-between">
+                        <div>
+                          <p className="text-sm font-medium">Next Available:</p>
+                          <p className="text-sm text-green-600 dark:text-green-400">{counselor.nextAvailable}</p>
+                          <div className="mt-3 flex flex-wrap gap-2">
+                            {['Today 3:00 PM', 'Tomorrow 11:00 AM', 'Friday 4:00 PM'].map((slot) => (
+                              <Badge key={`${counselor.id}-${slot}`} variant="outline" className="text-xs">
+                                <Clock className="h-3 w-3 mr-1" />
+                                {slot}
+                              </Badge>
+                            ))}
+                          </div>
                         </div>
-                        
-                        <div className="flex items-center gap-2 p-2 bg-muted/30 rounded-lg">
-                          <Clock className="h-4 w-4 text-secondary" />
-                          <span className="text-foreground font-medium">{appointment.time}</span>
-                        </div>
-                        
-                        <div className="flex items-center gap-2 p-2 bg-muted/30 rounded-lg">
-                          {appointment.sessionType === 'video' && <Video className="h-4 w-4 text-primary" />}
-                          {appointment.sessionType === 'phone' && <Phone className="h-4 w-4 text-secondary" />}
-                          {appointment.sessionType === 'offline' && <User className="h-4 w-4 text-accent" />}
-                          <span className="text-foreground font-medium capitalize">{appointment.sessionType}</span>
+
+                        <div className="flex w-full flex-col gap-3 sm:w-auto sm:flex-row">
+                          <Button>
+                            <MessageCircle className="h-4 w-4 mr-2" />
+                            Message
+                          </Button>
+                          <Button className="bg-primary hover:bg-primary/90" onClick={noop}>
+                            Book Session
+                          </Button>
                         </div>
                       </div>
+                    </div>
+                  </Card>
+                ))}
+              </div>
+            )}
+          </TabsContent>
 
-                      {/* Action buttons for booked appointment */}
-                      <div className="flex gap-2 mt-4">
-                        <Button 
-                          variant="outline" 
-                          size="sm"
-                          onClick={() => handleMessageCounselor(appointment.counselorId)}
-                          className="flex-1"
-                        >
-                          <MessageCircle className="h-4 w-4 mr-2" />
-                          Message Counselor
-                        </Button>
-                        <Button 
-                          variant="outline" 
-                          size="sm"
-                          className="flex-1"
-                          onClick={() => alert('Reschedule functionality coming soon!')}
-                        >
-                          <CalendarIcon className="h-4 w-4 mr-2" />
+          <TabsContent value="upcoming" className="space-y-4">
+            {upcomingSessions.length > 0 ? (
+              upcomingSessions.map((session) => (
+                <Card key={session.id} className="border-0 shadow-sm bg-card dark:bg-slate-900 rounded-3xl">
+                  <div className="p-6 space-y-4">
+                    <div className="flex flex-col lg:flex-row lg:items-start lg:justify-between gap-4">
+                      <div className="flex items-start space-x-4">
+                        <div className="w-12 h-12 rounded-xl bg-gradient-to-br from-green-500/20 to-blue-500/20 flex items-center justify-center">
+                          <Calendar className="h-6 w-6 text-green-600" />
+                        </div>
+                        <div>
+                          <h3 className="font-semibold">{session.counselorName}</h3>
+                          <p className="text-sm text-muted-foreground">{session.sessionType}</p>
+                          <div className="flex flex-wrap gap-4 mt-2 text-sm text-muted-foreground">
+                            <div className="flex items-center space-x-1">
+                              <Calendar className="h-3 w-3" />
+                              <span>{session.date.toLocaleDateString()}</span>
+                            </div>
+                            <div className="flex items-center space-x-1">
+                              <Clock className="h-3 w-3" />
+                              <span>{session.time}</span>
+                            </div>
+                            <div className="flex items-center space-x-1">
+                              {renderSessionIcon(session.type)}
+                              <span className="capitalize">{session.type}</span>
+                            </div>
+                          </div>
+                        </div>
+                      </div>
+                      <Badge className="bg-green-100 text-green-700 dark:bg-green-900/40 dark:text-green-300">
+                        {session.status}
+                      </Badge>
+                    </div>
+
+                    {session.notes && (
+                      <div className="p-3 rounded-lg bg-blue-50 text-sm text-blue-800 dark:bg-blue-900/40 dark:text-blue-100">
+                        <strong>Session focus:</strong> {session.notes}
+                      </div>
+                    )}
+
+                    <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-3">
+                      <div className="text-xs text-muted-foreground">
+                        Session ID: {session.id.toUpperCase()}
+                      </div>
+                      <div className="flex flex-col sm:flex-row sm:space-x-3 gap-3 sm:gap-0">
+                        <Button variant="outline" size="sm" onClick={noop}>
                           Reschedule
+                        </Button>
+                        <Button size="sm" className="bg-green-600 hover:bg-green-700" onClick={noop}>
+                          <Video className="h-4 w-4 mr-1" />
+                          Join Session
                         </Button>
                       </div>
                     </div>
                   </div>
                 </Card>
-              ))}
-            </div>
-          </div>
-        )}
+              ))
+            ) : (
+              <Card className="border-0 shadow-sm bg-card dark:bg-slate-900 rounded-3xl">
+                <div className="p-12 text-center space-y-4">
+                  <Calendar className="h-12 w-12 text-muted-foreground mx-auto" />
+                  <h3 className="text-lg font-semibold">No upcoming sessions</h3>
+                  <p className="text-sm text-muted-foreground">
+                    Book your first session to get started with professional support.
+                  </p>
+                  <Button onClick={() => setSelectedTab('book')}>Browse Counselors</Button>
+                </div>
+              </Card>
+            )}
+          </TabsContent>
 
-        {/* Help Section */}
-        <Card className="mt-8 mm-card mm-p-4 bg-gradient-to-br from-accent/5 to-destructive/5 text-center">
-          <Heart className="h-6 w-6 text-accent mx-auto mb-3" />
-          <h3 className="mm-text-h3 text-foreground mb-2">Need Help Right Now?</h3>
-          <p className="mm-text-body text-muted-foreground mb-4">
-            If you can't wait for your appointment, we have immediate support available.
-          </p>
-          <div className="flex flex-col sm:flex-row mm-gap-3 justify-center">
-            <Link to="/crisis">
-              <Button className="crisis-support">
-                <Shield className="h-4 w-4 mr-2" />
-                Crisis Support
-              </Button>
-            </Link>
-            <Link to="/chat">
-              <Button variant="outline" className="border-primary text-primary">
-                <Heart className="h-4 w-4 mr-2" />
-                Chat with AI
-              </Button>
-            </Link>
+          <TabsContent value="history" className="space-y-4">
+            {pastSessions.length > 0 ? (
+              pastSessions.map((session) => (
+                <Card key={session.id} className="border-0 shadow-sm bg-card dark:bg-slate-900 rounded-3xl">
+                  <div className="p-6 space-y-4">
+                    <div className="flex items-start justify-between">
+                      <div className="flex items-start space-x-4">
+                        <div className="w-12 h-12 rounded-xl bg-gradient-to-br from-purple-500/20 to-blue-500/20 flex items-center justify-center">
+                          <BookOpen className="h-6 w-6 text-purple-600" />
+                        </div>
+                        <div className="space-y-1">
+                          <h3 className="font-semibold">{session.counselorName}</h3>
+                          <p className="text-sm text-muted-foreground">{session.sessionType}</p>
+                          <div className="flex items-center space-x-4 text-sm text-muted-foreground">
+                            <div className="flex items-center space-x-1">
+                              <Calendar className="h-3 w-3" />
+                              <span>{session.date.toLocaleDateString()}</span>
+                            </div>
+                            <div className="flex items-center space-x-1">
+                              <Clock className="h-3 w-3" />
+                              <span>{session.time}</span>
+                            </div>
+                          </div>
+                        </div>
+                      </div>
+                      <div className="flex items-center space-x-1">
+                        {Array.from({ length: session.rating }).map((_, index) => (
+                          <Star key={`${session.id}-rating-${index}`} className="h-4 w-4 text-yellow-500 fill-current" />
+                        ))}
+                      </div>
+                    </div>
+
+                    {session.notes && (
+                      <div className="p-3 bg-muted/40 rounded-lg dark:bg-slate-800/60 space-y-3">
+                        <p className="text-sm text-foreground/80">
+                          <strong>Session notes:</strong> {session.notes}
+                        </p>
+                        {session.outcomes && session.outcomes.length > 0 && (
+                          <div className="space-y-1">
+                            <p className="text-xs font-medium text-muted-foreground">Key outcomes:</p>
+                            <ul className="text-xs text-muted-foreground space-y-1">
+                              {session.outcomes.map((outcome, index) => (
+                                <li key={`${session.id}-outcome-${index}`} className="flex items-center space-x-1">
+                                  <CheckCircle2 className="h-3 w-3 text-green-600" />
+                                  <span>{outcome}</span>
+                                </li>
+                              ))}
+                            </ul>
+                          </div>
+                        )}
+                      </div>
+                    )}
+
+                    <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3">
+                      <div className="text-xs text-muted-foreground">Session completed • Confidential</div>
+                      <Button variant="outline" size="sm" onClick={noop}>
+                        Book Follow-up
+                      </Button>
+                    </div>
+                  </div>
+                </Card>
+              ))
+            ) : (
+              <Card className="border-0 shadow-sm bg-card dark:bg-slate-900 rounded-3xl">
+                <div className="p-12 text-center space-y-4">
+                  <BookOpen className="h-12 w-12 text-muted-foreground mx-auto" />
+                  <h3 className="text-lg font-semibold">No session history</h3>
+                  <p className="text-sm text-muted-foreground">Your completed sessions will appear here.</p>
+                </div>
+              </Card>
+            )}
+          </TabsContent>
+        </Tabs>
+
+        <Card className="border-0 shadow-sm rounded-3xl bg-gradient-to-r from-slate-50 to-gray-50 dark:from-slate-900 dark:to-slate-800">
+          <div className="p-6 space-y-4">
+            <h3 className="font-semibold text-lg">Need Help Choosing?</h3>
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+              <div className="flex items-start space-x-3">
+                <MessageCircle className="h-5 w-5 text-primary mt-0.5" />
+                <div>
+                  <p className="font-medium text-sm">Chat with Support</p>
+                  <p className="text-xs text-muted-foreground">
+                    Get help finding the right counselor for your needs
+                  </p>
+                </div>
+              </div>
+              <div className="flex items-start space-x-3">
+                <Shield className="h-5 w-5 text-green-600 mt-0.5" />
+                <div>
+                  <p className="font-medium text-sm">Privacy Policy</p>
+                  <p className="text-xs text-muted-foreground">Learn about our confidentiality protections</p>
+                </div>
+              </div>
+            </div>
           </div>
         </Card>
       </main>
 
-      {/* Navigation */}
       <div className="fixed bottom-0 left-0 right-0 z-50">
         <Navigation />
       </div>
