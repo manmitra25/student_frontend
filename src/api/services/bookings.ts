@@ -1,12 +1,11 @@
 import API from "../axios";
 
-// Match your backend Booking schema
 export interface Booking {
   _id: string;
   studentId: string;
   therapistId: string;
-  date: string;              // ISO date
-  time: string;              // "10:00 AM"
+  date: string;
+  time: string;
   sessionType: "video" | "chat" | "offline";
   status: "pending" | "confirmed" | "cancelled" | "completed";
   expiresAt?: string;
@@ -15,14 +14,13 @@ export interface Booking {
   location?: string;
 }
 
-// --- Book Therapist Session ---
 export async function bookTherapist(payload: {
-  studentId: string;
+  // studentId: string;
   therapistId: string;
-  date: string;        // from date picker (YYYY-MM-DD or ISO string)
-  time: string;        // from time picker ("10:00 AM")
+  date: string;
+  time: string;
   sessionType: "video" | "chat" | "offline";
-}) {
+}): Promise<{ message: string; booking: Booking }> {
   const { data } = await API.post<{ message: string; booking: Booking }>(
     "/bookings/book",
     payload
@@ -30,8 +28,7 @@ export async function bookTherapist(payload: {
   return data;
 }
 
-// --- Confirm Booking ---
-export async function confirmBooking(bookingId: string) {
+export async function confirmBooking(bookingId: string): Promise<{ message: string; booking: Booking }> {
   const { data } = await API.post<{ message: string; booking: Booking }>(
     "/bookings/confirm",
     { bookingId }
@@ -39,18 +36,14 @@ export async function confirmBooking(bookingId: string) {
   return data;
 }
 
-// --- Get All Bookings for Student ---
-export async function getStudentBookings(studentId: string) {
+export async function getStudentBookings(studentId: string): Promise<Booking[]> {
   const { data } = await API.get<{ bookings: Booking[] }>(
     `/bookings/student/${studentId}`
   );
   return data.bookings;
 }
 
-// --- Get All Bookings for Therapist (useful for therapist dashboard) ---
-export async function getTherapistBookings(therapistId: string) {
-  const { data } = await API.get<{ bookings: Booking[] }>(
-    `/bookings/therapist/${therapistId}`
-  );
-  return data.bookings;
+// small helper
+export function isActive(b: Booking) {
+  return b.status === "pending" || b.status === "confirmed";
 }
