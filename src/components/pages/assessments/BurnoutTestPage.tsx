@@ -40,6 +40,7 @@ export default function BurnoutTestPage() {
       questions={questions}
       options={options}
       interpretScore={interpretScore}
+      type="burnout"
       onBack={handleBack}
     />
   );

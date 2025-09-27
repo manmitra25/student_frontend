@@ -43,6 +43,7 @@ export default function DepressionTestPage() {
       questions={questions}
       options={options}
       interpretScore={interpretScore}
+      type="depression"
       onBack={handleBack}
     />
   );

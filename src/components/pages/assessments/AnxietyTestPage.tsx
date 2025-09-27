@@ -40,6 +40,7 @@ export default function AnxietyTestPage() {
       questions={questions}
       options={options}
       interpretScore={interpretScore}
+      type="anxiety"
       onBack={handleBack}
     />
   );

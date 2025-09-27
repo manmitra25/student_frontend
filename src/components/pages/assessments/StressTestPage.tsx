@@ -40,6 +40,7 @@ export default function StressTestPage() {
       questions={questions}
       options={options}
       interpretScore={interpretScore}
+      type="stress"
       onBack={handleBack}
     />
   );
