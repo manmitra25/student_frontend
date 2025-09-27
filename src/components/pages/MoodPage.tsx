@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react';
+import React, { useState, useEffect } from 'react';
 import { Link } from 'react-router-dom';
 import { Button } from '../ui/button';
 import { Card } from '../ui/card';
@@ -19,7 +19,9 @@ import {
   ChevronRight,
   Target,
   Award,
-  Flame
+  Flame,
+  AlertTriangle,
+  Frown,
 } from 'lucide-react';
 import { useApp } from '../../App';
 import Navigation from '../shared/Navigation';
@@ -36,29 +38,37 @@ const habitItems = [
 
 const wellnessTests = [
   {
-    id: 'phq9',
-    name: 'PHQ-9',
-    description: 'Depression screening',
-    progress: 0,
-    color: 'red',
-    icon: Brain
-  },
-  {
     id: 'gad7',
-    name: 'GAD-7', 
-    description: 'Anxiety assessment',
+    name: 'Are you Anxious',
+    description: '7 quick questions (GAD‑7 style)',
     progress: 0,
     color: 'orange',
-    icon: Heart
+    icon: AlertTriangle,
+  },
+  {
+    id: 'phq9',
+    name: 'Are you Depressed',
+    description: '9 quick questions (PHQ‑9 style)',
+    progress: 0,
+    color: 'red',
+    icon: Frown,
   },
   {
     id: 'burnout',
     name: 'Burnout',
-    description: 'Academic stress check',
+    description: 'Academic/work strain check',
     progress: 0,
     color: 'violet',
-    icon: Target
-  }
+    icon: Target,
+  },
+  {
+    id: 'stress',
+    name: 'Are you Stressed',
+    description: '7 quick questions',
+    progress: 0,
+    color: 'blue',
+    icon: Brain,
+  },
 ];
 
 export default function MoodPage() {
@@ -222,7 +232,7 @@ export default function MoodPage() {
         </Card>
 
         {/* Wellness Tests */}
-        <Card className="p-6 border-0 shadow-sm">
+        <Card className="p-6 border-0 shadow-sm" data-section="wellness-tests">
           <div className="flex items-center justify-between mb-4">
             <h3 className="text-lg font-semibold text-foreground">Wellness Tests</h3>
             <Link to="/assessment">
@@ -314,13 +324,13 @@ export default function MoodPage() {
             </Card>
           </Link>
           
-          <Link to="/study-break">
+          <Link to="/resources">
             <Card className="p-4 border-0 bg-gradient-to-br from-secondary/10 to-secondary/20 hover:from-secondary/20 hover:to-secondary/30 transition-all cursor-pointer">
               <div className="flex items-center space-x-3">
-                <Smile className="h-6 w-6 text-secondary" />
+                <BookOpen className="h-6 w-6 text-secondary" />
                 <div>
-                  <p className="font-medium text-secondary">Take a Break</p>
-                  <p className="text-xs text-secondary/80">Mindful moments</p>
+                  <p className="font-medium text-secondary">Resources</p>
+                  <p className="text-xs text-secondary/80">Wellness tools</p>
                 </div>
               </div>
             </Card>

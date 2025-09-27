@@ -1,4 +1,4 @@
-import { useState, useRef, useEffect } from 'react';
+import React, { useState, useRef, useEffect } from 'react';
 
 import { Link } from 'react-router-dom';
 
@@ -98,9 +98,9 @@ interface ChatPageProps {
 
 export default function ChatPage({ assessmentMode = false }: ChatPageProps) {
 
- const [isConsentOpen, setIsConsentOpen] = useState(true);
+ const [isConsentOpen, setIsConsentOpen] = useState(false);
 
- const [isInitialConsentRequired, setIsInitialConsentRequired] = useState(true);
+ const [isInitialConsentRequired, setIsInitialConsentRequired] = useState(false);
 
  const handleConsent = (allowed: boolean) => {
 
@@ -109,6 +109,8 @@ export default function ChatPage({ assessmentMode = false }: ChatPageProps) {
   try {
 
    localStorage.setItem('chat_summary_consent', allowed ? 'allowed' : 'denied');
+   // Also sync with ProfilePage consent state
+   localStorage.setItem('consent_summary_sharing', allowed.toString());
 
   } catch {}
 
@@ -117,6 +119,23 @@ export default function ChatPage({ assessmentMode = false }: ChatPageProps) {
   setIsInitialConsentRequired(false);
 
  };
+
+ // Check if consent modal should be shown on first visit to Bestie in this session
+ useEffect(() => {
+   // Check if this is the first time visiting Bestie in this session
+   const sessionKey = 'bestie_visited_this_session';
+   const hasVisitedBestieThisSession = sessionStorage.getItem(sessionKey);
+   
+   if (!hasVisitedBestieThisSession) {
+     // Mark that user has visited Bestie in this session
+     sessionStorage.setItem(sessionKey, 'true');
+     
+     // Always show consent modal on first visit to Bestie in a new session
+     // This ensures it shows after login even if consent was given before
+     setIsConsentOpen(true);
+     setIsInitialConsentRequired(true);
+   }
+ }, []);
 
 
 
@@ -736,11 +755,6 @@ export default function ChatPage({ assessmentMode = false }: ChatPageProps) {
 
         
 
-       <Button variant="outline" size="sm" className="mr-2" onClick={() => setIsConsentOpen(true)}>
-
-        Change Consent
-
-       </Button>
 
        <Button variant="ghost" size="sm" className="hover:scale-110 transition-transform">
 

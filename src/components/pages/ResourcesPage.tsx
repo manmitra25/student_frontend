@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { Link } from 'react-router-dom';
 import { Button } from '../ui/button';
 import { Card } from '../ui/card';
@@ -23,7 +23,8 @@ import {
   Video,
   Bookmark,
   BookmarkCheck,
-  Filter
+  Filter,
+  X
 } from 'lucide-react';
 import Navigation from '../shared/Navigation';
 import EmptyState from '../shared/EmptyState';
@@ -70,6 +71,20 @@ const categories = [
     count: 8
   }
 ];
+
+// Video URL mapping for resources
+const videoUrlMap: { [key: string]: string } = {
+  '5-Minute Calm Before Exams': 'https://www.youtube.com/watch?v=wE292vsJcBY&t=150s',
+  'Breaking the Worry Cycle': 'https://www.youtube.com/watch?v=s_Ikc1zHrCE',
+  'Pressure Cooker to Peace: Managing Family Expectations': 'https://www.youtube.com/shorts/40kNhFMTN6g',
+  'Student Sleep Rescue Plan': 'https://www.youtube.com/watch?v=2jr6aisK3NE',
+  'Deep Sleep Meditation': 'https://www.youtube.com/watch?v=lu_cLaBTXio',
+  'Talking to Parents About Mental Health': 'https://www.youtube.com/watch?v=QTy3WQgbt9E',
+  'Friendship Boundaries in College': 'https://www.youtube.com/watch?v=Gf4FIt5DG4g',
+  'Finding Your Voice in Engineering Culture': 'https://www.youtube.com/watch?v=Gf4FIt5DG4g', // Same as Friendship Boundaries
+  'Self-Compassion for Perfectionists': 'https://www.youtube.com/watch?v=Gf4FIt5DG4g', // Same as Friendship Boundaries
+  'Crisis Safety Planning Workbook': 'https://www.youtube.com/watch?v=Gf4FIt5DG4g' // Same as Friendship Boundaries
+};
 
 const allResources = [
   // Stress & Anxiety Resources
@@ -218,6 +233,54 @@ export default function ResourcesPage() {
   const [selectedCategory, setSelectedCategory] = useState<string | null>(null);
   const [savedResources, setSavedResources] = useState<Set<number>>(new Set([1, 3, 6]));
   const [showSavedOnly, setShowSavedOnly] = useState(false);
+  const [isModalOpen, setIsModalOpen] = useState(false);
+  const [selectedVideoUrl, setSelectedVideoUrl] = useState('');
+  const [selectedResourceTitle, setSelectedResourceTitle] = useState('');
+
+  // Convert YouTube URL to embed URL
+  const getEmbedUrl = (url: string) => {
+    const videoId = url.includes('youtube.com/watch?v=') 
+      ? url.split('v=')[1]?.split('&')[0]
+      : url.includes('youtube.com/shorts/')
+      ? url.split('shorts/')[1]?.split('?')[0]
+      : null;
+    
+    if (videoId) {
+      return `https://www.youtube.com/embed/${videoId}`;
+    }
+    return url;
+  };
+
+  // Handle opening modal with video
+  const handleStartResource = (resourceTitle: string) => {
+    const videoUrl = videoUrlMap[resourceTitle];
+    if (videoUrl) {
+      setSelectedVideoUrl(videoUrl);
+      setSelectedResourceTitle(resourceTitle);
+      setIsModalOpen(true);
+    }
+  };
+
+  // Handle closing modal
+  const handleCloseModal = () => {
+    setIsModalOpen(false);
+    setSelectedVideoUrl('');
+    setSelectedResourceTitle('');
+  };
+
+  // Body scroll lock effect
+  useEffect(() => {
+    if (isModalOpen) {
+      document.body.style.overflow = 'hidden';
+    } else {
+      document.body.style.overflow = 'unset';
+    }
+    
+    // Cleanup on unmount
+    return () => {
+      document.body.style.overflow = 'unset';
+    };
+  }, [isModalOpen]);
 
   const filteredResources = allResources.filter(resource => {
     const matchesSearch = resource.title.toLowerCase().includes(searchQuery.toLowerCase()) ||
@@ -533,9 +596,13 @@ export default function ResourcesPage() {
                             </Badge>
                           </div>
                           
-                          <Button size="sm" className="mm-btn-primary mm-btn-sm group-hover:scale-105 transition-transform">
+                          <Button 
+                            size="sm" 
+                            className="mm-btn-primary mm-btn-sm group-hover:scale-105 transition-transform"
+                            onClick={() => handleStartResource(resource.title)}
+                          >
                             <Play className="h-4 w-4 mr-1" />
-                            Access Resource
+                            Start
                           </Button>
                         </div>
                       </div>
@@ -575,6 +642,61 @@ export default function ResourcesPage() {
       <div className="fixed bottom-0 left-0 right-0 z-50 md:hidden">
         <Navigation />
       </div>
+
+      {/* Video Modal */}
+      {isModalOpen && (
+        <div 
+          className="fixed inset-0 z-50 flex items-center justify-center bg-black/80 backdrop-blur-sm"
+          onClick={handleCloseModal}
+        >
+          <div 
+            className="relative w-full max-w-4xl mx-4 bg-card rounded-lg shadow-2xl overflow-hidden"
+            onClick={(e) => e.stopPropagation()}
+          >
+            {/* Modal Header */}
+            <div className="flex items-center justify-between p-4 border-b border-border">
+              <h3 className="mm-text-h3 text-foreground">{selectedResourceTitle}</h3>
+              <Button
+                variant="ghost"
+                size="sm"
+                onClick={handleCloseModal}
+                className="hover:bg-muted rounded-lg"
+              >
+                <X className="h-5 w-5" />
+              </Button>
+            </div>
+            
+            {/* Video Container */}
+            <div className="relative w-full" style={{ paddingBottom: '56.25%' }}>
+              <iframe
+                src={getEmbedUrl(selectedVideoUrl)}
+                title={selectedResourceTitle}
+                className="absolute top-0 left-0 w-full h-full"
+                frameBorder="0"
+                allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
+                allowFullScreen
+              />
+            </div>
+            
+            {/* Modal Footer */}
+            <div className="p-4 border-t border-border bg-muted/20">
+              <div className="flex items-center justify-between">
+                <p className="mm-text-small text-muted-foreground">
+                  Click outside the modal or press the X button to close
+                </p>
+                <Button
+                  variant="outline"
+                  size="sm"
+                  onClick={handleCloseModal}
+                  className="mm-btn-secondary mm-btn-sm"
+                >
+                  Close
+                </Button>
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 }

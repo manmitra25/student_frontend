@@ -24,6 +24,11 @@ import CareerGuidancePage from './components/pages/CareerGuidancePage';
 import HubPage from './components/pages/HubPage';
 import HubDetailPage from './components/pages/HubDetailPage';
 import MoodPage from './components/pages/MoodPage';
+import AnxietyTestPage from './components/pages/assessments/AnxietyTestPage';
+import DepressionTestPage from './components/pages/assessments/DepressionTestPage';
+import BurnoutTestPage from './components/pages/assessments/BurnoutTestPage';
+import StressTestPage from './components/pages/assessments/StressTestPage';
+
 
 // Types
 interface User {
@@ -33,6 +38,10 @@ interface User {
   role: 'student' | 'counsellor';
   college: string;
   isNewUser?: boolean;
+  mobileNumber?: string;
+  age?: string;
+  gender?: string;
+  occupation?: string;
 }
 
 interface AppContextType {
@@ -76,8 +85,8 @@ export default function App() {
       return null;
     }
 
-    const storedToken = window.localStorage.getItem('token');
-    const storedUser = window.localStorage.getItem('user');
+    const storedToken = window.sessionStorage.getItem('token');
+    const storedUser = window.sessionStorage.getItem('user');
 
     if (!storedToken || !storedUser) {
       return null;
@@ -86,7 +95,7 @@ export default function App() {
     try {
       return JSON.parse(storedUser) as User;
     } catch {
-      window.localStorage.removeItem('user');
+      window.sessionStorage.removeItem('user');
       return null;
     }
   });
@@ -99,10 +108,10 @@ export default function App() {
     }
 
     if (value) {
-      window.localStorage.setItem('user', JSON.stringify(value));
+      window.sessionStorage.setItem('user', JSON.stringify(value));
     } else {
-      window.localStorage.removeItem('user');
-      window.localStorage.removeItem('token');
+      window.sessionStorage.removeItem('user');
+      window.sessionStorage.removeItem('token');
     }
   }, []);
 
@@ -234,6 +243,26 @@ export default function App() {
                   <MoodPage />
                 </ProtectedRoute>
               } />
+              <Route path="/assessment/gad7" element={
+                <ProtectedRoute>
+                <AnxietyTestPage />
+                </ProtectedRoute>
+              } />
+            <Route path="/assessment/phq9" element={
+               <ProtectedRoute>
+                <DepressionTestPage />
+                </ProtectedRoute>
+              } />
+            <Route path="/assessment/burnout" element={
+               <ProtectedRoute>
+               <BurnoutTestPage />
+              </ProtectedRoute>
+              } />
+            <Route path="/assessment/stress" element={
+             <ProtectedRoute>
+             <StressTestPage />
+             </ProtectedRoute>
+            } />
               
               {/* Fallback */}
               <Route path="*" element={<Navigate to="/" replace />} />

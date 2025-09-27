@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react';
+import React, { useState, useEffect } from 'react';
 import { Link } from 'react-router-dom';
 import { Button } from '../ui/button';
 import { Card } from '../ui/card';
@@ -22,7 +22,11 @@ import {
   Timer,
   Calendar,
   Users,
-  Zap
+  Zap,
+  Heart,
+  Lightbulb,
+  TrendingUp,
+  Sun
 } from 'lucide-react';
 import Navigation from '../shared/Navigation';
 
@@ -65,27 +69,54 @@ const ambientSounds = [
   { id: 'white-noise', name: 'White Noise', emoji: '⚪', isPlaying: false }
 ];
 
-const studyPlans = [
+const categories = [
   {
-    subject: 'Machine Learning',
-    timeAllocated: 120,
-    timeUsed: 85,
-    status: 'in-progress',
-    nextTopic: 'Neural Networks'
+    id: 'anxiety-stress',
+    title: 'Anxiety & Stress',
+    resources: 24,
+    description: 'Coping strategies and relaxation techniques',
+    icon: Heart,
+    color: 'text-red-500' 
   },
   {
-    subject: 'Database Systems',
-    timeAllocated: 90,
-    timeUsed: 90,
-    status: 'completed',
-    nextTopic: 'Completed'
+    id: 'depression-support',
+    title: 'Depression Support',
+    resources: 18,
+    description: 'Understanding and managing depression',
+    icon: Lightbulb,
+    color: 'text-blue-500'
   },
   {
-    subject: 'Software Engineering',
-    timeAllocated: 60,
-    timeUsed: 25,
-    status: 'planned',
-    nextTopic: 'Design Patterns'
+    id: 'study-focus',
+    title: 'Study & Focus',
+    resources: 32,
+    description: 'Academic success and productivity tips',
+    icon: BookOpen,
+    color: 'text-green-500'
+  },
+  {
+    id: 'sleep-wellness',
+    title: 'Sleep & Wellness',
+    resources: 15,
+    description: 'Better sleep and self-care practices',
+    icon: Sun,
+    color: 'text-purple-500'
+  },
+  {
+    id: 'relationships',
+    title: 'Relationships',
+    resources: 21,
+    description: 'Social connections and communication',
+    icon: Users,
+    color: 'text-pink-500'
+  },
+  {
+    id: 'career-future',
+    title: 'Career & Future',
+    resources: 19,
+    description: 'Career planning and future goals',
+    icon: TrendingUp,
+    color: 'text-orange-500'
   }
 ];
 
@@ -99,13 +130,12 @@ export default function StudyToolsPage() {
   const [soundEnabled, setSoundEnabled] = useState(true);
 
   useEffect(() => {
-    let interval: NodeJS.Timeout;
+    let interval: ReturnType<typeof setInterval>;
     if (isRunning && timeRemaining > 0) {
       interval = setInterval(() => {
         setTimeRemaining(timeRemaining - 1);
       }, 1000);
     } else if (timeRemaining === 0 && activeSession) {
-      // Switch between work and break
       if (isBreak) {
         setIsBreak(false);
         setTimeRemaining(activeSession.duration * 60);
@@ -292,104 +322,38 @@ export default function StudyToolsPage() {
           </div>
         </div>
 
-        {/* Today's Study Plan */}
+        {/* New "Browse by Category" section with updated styling */}
         <div className="mb-8">
           <h2 className="mm-text-h2 text-foreground mb-4 flex items-center mm-gap-2">
-            <Target className="h-5 w-5 text-accent" />
-            Today's Study Plan
+            Browse by Category
           </h2>
-          <div className="space-y-4">
-            {studyPlans.map((plan, index) => (
-              <Card key={index} className="mm-card mm-p-4">
-                <div className="flex items-center justify-between mb-3">
-                  <div>
-                    <h3 className="mm-text-h3 text-foreground">{plan.subject}</h3>
-                    <p className="mm-text-small text-muted-foreground">Next: {plan.nextTopic}</p>
+          <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-4">
+            {categories.map((category) => (
+              <Link 
+                key={category.id} 
+                to={`/study-tools/category/${category.id}`}
+                className="block"
+              >
+                <Card 
+                  className="p-4 flex flex-col gap-3 hover:scale-[1.02] transition-all cursor-pointer"
+                >
+                  <div className="flex items-center gap-3">
+                    <div className={`w-12 h-12 rounded-xl flex-shrink-0 flex items-center justify-center ${category.color} bg-background/20`}>
+                      <category.icon className={`h-6 w-6`} />
+                    </div>
+                    <div className="flex-1">
+                      <h3 className="font-semibold text-foreground text-base leading-tight">{category.title}</h3>
+                      <p className="text-xs text-muted-foreground leading-none">{category.resources} resources</p>
+                    </div>
                   </div>
-                  <Badge className={`mm-text-xs ${
-                    plan.status === 'completed' ? 'bg-secondary text-white' :
-                    plan.status === 'in-progress' ? 'bg-primary text-white' :
-                    'bg-muted text-muted-foreground'
-                  }`}>
-                    {plan.status === 'completed' ? 'Done' :
-                     plan.status === 'in-progress' ? 'Active' : 'Planned'}
-                  </Badge>
-                </div>
-                
-                <div className="space-y-2">
-                  <div className="flex justify-between items-center">
-                    <span className="mm-text-small text-muted-foreground">Progress</span>
-                    <span className="mm-text-small text-foreground">
-                      {plan.timeUsed}min / {plan.timeAllocated}min
-                    </span>
-                  </div>
-                  <Progress value={(plan.timeUsed / plan.timeAllocated) * 100} className="h-2" />
-                </div>
-
-                {plan.status !== 'completed' && (
-                  <Button 
-                    className="w-full mt-3 mm-btn-secondary"
-                    onClick={() => {
-                      // Start a session for this subject
-                      const technique = focusTechniques[0]; // Default to Pomodoro
-                      startSession({ ...technique, subject: plan.subject });
-                    }}
-                  >
-                    <Play className="h-4 w-4 mr-2" />
-                    Continue Studying
-                  </Button>
-                )}
-              </Card>
+                  <p className="text-sm text-muted-foreground leading-snug">
+                    {category.description}
+                  </p>
+                </Card>
+              </Link>
             ))}
           </div>
         </div>
-
-        {/* Quick Actions */}
-        <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
-          <Link to="/study-groups">
-            <Card className="mm-card mm-p-3 hover:scale-[1.02] transition-all cursor-pointer text-center">
-              <Users className="h-8 w-8 text-violet-500 mx-auto mb-2" />
-              <div className="mm-text-small font-medium text-foreground">Study Groups</div>
-            </Card>
-          </Link>
-          <Link to="/resources/study-techniques">
-            <Card className="mm-card mm-p-3 hover:scale-[1.02] transition-all cursor-pointer text-center">
-              <BookOpen className="h-8 w-8 text-blue-500 mx-auto mb-2" />
-              <div className="mm-text-small font-medium text-foreground">Study Tips</div>
-            </Card>
-          </Link>
-          <Link to="/academic-tracking">
-            <Card className="mm-card mm-p-3 hover:scale-[1.02] transition-all cursor-pointer text-center">
-              <Calendar className="h-8 w-8 text-green-500 mx-auto mb-2" />
-              <div className="mm-text-small font-medium text-foreground">Schedule</div>
-            </Card>
-          </Link>
-          <Link to="/chat">
-            <Card className="mm-card mm-p-3 hover:scale-[1.02] transition-all cursor-pointer text-center">
-              <Coffee className="h-8 w-8 text-orange-500 mx-auto mb-2" />
-              <div className="mm-text-small font-medium text-foreground">Study Buddy</div>
-            </Card>
-          </Link>
-        </div>
-
-        {/* Study Stats */}
-        <Card className="mt-8 mm-card mm-p-4 bg-gradient-to-r from-primary/5 to-secondary/5">
-          <h3 className="mm-text-h3 text-foreground mb-4">Today's Stats</h3>
-          <div className="grid grid-cols-3 gap-4 text-center">
-            <div>
-              <div className="mm-text-h2 text-primary font-bold">3</div>
-              <div className="mm-text-xs text-muted-foreground">Focus Sessions</div>
-            </div>
-            <div>
-              <div className="mm-text-h2 text-secondary font-bold">2.5h</div>
-              <div className="mm-text-xs text-muted-foreground">Total Study Time</div>
-            </div>
-            <div>
-              <div className="mm-text-h2 text-accent font-bold">85%</div>
-              <div className="mm-text-xs text-muted-foreground">Focus Score</div>
-            </div>
-          </div>
-        </Card>
       </main>
 
       {/* Navigation */}
