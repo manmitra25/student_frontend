@@ -28,6 +28,7 @@ import AnxietyTestPage from './components/pages/assessments/AnxietyTestPage';
 import DepressionTestPage from './components/pages/assessments/DepressionTestPage';
 import BurnoutTestPage from './components/pages/assessments/BurnoutTestPage';
 import StressTestPage from './components/pages/assessments/StressTestPage';
+import DirectMessage from './components/shared/DirectMessage';
 
 
 // Types
@@ -196,6 +197,11 @@ export default function App() {
               <Route path="/booking/counselor/:counselorId" element={
                 <ProtectedRoute>
                   <BookingPage />
+                </ProtectedRoute>
+              } />
+              <Route path="/message/:counselorId" element={
+                <ProtectedRoute>
+                  <DirectMessage />
                 </ProtectedRoute>
               } />
               <Route path="/journal" element={

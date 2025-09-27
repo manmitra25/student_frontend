@@ -1,10 +1,17 @@
 // src/components/pages/BookingPage.tsx
+
 import React, { useCallback, useEffect, useMemo, useState } from "react";
+
 import { useNavigate } from "react-router-dom";
+
 import { Button } from "../ui/button";
+
 import { Card } from "../ui/card";
+
 import { Badge } from "../ui/badge";
+
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "../ui/tabs";
+
 import {
   AlertCircle,
   Calendar,
@@ -26,10 +33,21 @@ import {
   ArrowLeft,
   Bell,
 } from "lucide-react";
+
 import Navigation from "../shared/Navigation";
+
 import { getTherapists, Therapist } from "../../api/services/therapists";
-import { confirmBooking, bookTherapist, Booking } from "../../api/services/bookings";
+
+import {
+  confirmBooking,
+  bookTherapist,
+  getMyBookings,
+  cancelBooking,
+  Booking,
+} from "../../api/services/bookings";
+
 import LoadingSpinner from "../shared/LoadingSpinner";
+
 import { useApp } from "../../App";
 
 // --- helpers ---
@@ -53,15 +71,15 @@ function formatDatePretty(value: string | Date) {
 }
 
 // Session topics for booking
-const sessionTopics = [
-  'Self Improvement',
-  'Sexual Wellness',
-  'Abuse & Discrimination',
-  'Academic',
-  'Career',
-  'LGBTQIA+',
-  'Psychological Disorders',
-  'Relationship'
+const TOPIC_OPTIONS = [
+  { label: "Self Improvement", api: "self Improvement" },
+  { label: "Sexual Wellness", api: "sexual Wellness" },
+  { label: "Abuse & Discrimination", api: "abuse & discrimination" },
+  { label: "Academic", api: "academic" },
+  { label: "Career", api: "career" },
+  { label: "LGBTQIA+", api: "lgbtqia+" },
+  { label: "Psychological Disorders", api: "psychological disorders" },
+  { label: "Relationship", api: "relationship" },
 ];
 
 // Demo tabs data (keep empty or hook to a real "my bookings" API later)
@@ -92,7 +110,9 @@ const pastSessions: PastSession[] = [];
 export default function BookingPage() {
   const { user } = useApp() as any; // expects user?.id
   const navigate = useNavigate();
-  const [selectedTab, setSelectedTab] = useState<"book" | "upcoming" | "history">("book");
+  const [selectedTab, setSelectedTab] = useState<
+    "book" | "upcoming" | "history"
+  >("book");
   const [searchQuery, setSearchQuery] = useState("");
   const [showFilters, setShowFilters] = useState(false);
   const [therapists, setTherapists] = useState<Therapist[]>([]);
@@ -100,12 +120,17 @@ export default function BookingPage() {
   const [error, setError] = useState<string | null>(null);
 
   // booking UI state
-  const [selectedTherapist, setSelectedTherapist] = useState<Therapist | null>(null);
+  const [selectedTherapist, setSelectedTherapist] = useState<Therapist | null>(
+    null
+  );
   const [submitLoading, setSubmitLoading] = useState(false);
   const [confirmLoading, setConfirmLoading] = useState(false);
   const [pendingBooking, setPendingBooking] = useState<Booking | null>(null);
   const [apiMessage, setApiMessage] = useState<string | null>(null);
   const [apiError, setApiError] = useState<string | null>(null);
+  // --- my bookings state ---
+  const [myBookings, setMyBookings] = useState<Booking[]>([]);
+  const [loadingMy, setLoadingMy] = useState(false);
 
   const fetchCounselors = useCallback(async () => {
     try {
@@ -120,10 +145,23 @@ export default function BookingPage() {
       setLoading(false);
     }
   }, []);
-
   useEffect(() => {
     fetchCounselors();
   }, [fetchCounselors]);
+  const refreshMyBookings = useCallback(async () => {
+    try {
+      setLoadingMy(true);
+      const data = await getMyBookings();
+      setMyBookings(data);
+    } catch (e) {
+      console.error("Failed to load my bookings:", e);
+    } finally {
+      setLoadingMy(false);
+    }
+  }, []);
+  useEffect(() => {
+    if (user?.id) refreshMyBookings();
+  }, [user?.id, refreshMyBookings]);
 
   const filteredCounselors = useMemo(() => {
     if (!searchQuery.trim()) return therapists;
@@ -138,8 +176,35 @@ export default function BookingPage() {
     });
   }, [searchQuery, therapists]);
 
+  const upcoming = useMemo(
+    () =>
+      myBookings
+        .filter((b) => b.status === "pending" || b.status === "confirmed")
+        .sort(
+          (a, b) => new Date(a.date).getTime() - new Date(b.date).getTime()
+        ),
+    [myBookings]
+  );
+
+  const history = useMemo(
+    () =>
+      myBookings
+        .filter((b) => b.status === "completed" || b.status === "cancelled")
+        .sort(
+          (a, b) => new Date(b.date).getTime() - new Date(a.date).getTime()
+        ),
+    [myBookings]
+  );
+
+  const therapistNameById = useCallback(
+    (id: string) => therapists.find((t) => t._id === id)?.name ?? "Therapist",
+    [therapists]
+  );
+
   // Create pending booking
-  const handleBookingSubmit = async (event: React.FormEvent<HTMLFormElement>) => {
+  const handleBookingSubmit = async (
+    event: React.FormEvent<HTMLFormElement>
+  ) => {
     event.preventDefault();
     setApiError(null);
     setApiMessage(null);
@@ -150,36 +215,39 @@ export default function BookingPage() {
       return;
     }
 
-    const formData = new FormData(event.currentTarget);
-    const rawDate = formData.get("date") as string;        // "YYYY-MM-DD"
-    const rawTime = formData.get("time") as string;        // "HH:mm"
-    const uiMode = formData.get("mode") as "video" | "phone" | "offline";
-    const sessionTopic = formData.get("sessionTopic") as string;
+    const form = new FormData(event.currentTarget);
+    const rawDate = form.get("date") as string;
+    const rawTime = form.get("time") as string; // "HH:mm" 24h
+    const uiMode = form.get("mode") as "video" | "phone" | "offline";
+    const topicApi = form.get("sessionTopic") as string; // ⬅️ already the API value now
 
-    if (!rawDate || !rawTime || !sessionTopic) {
+    if (!rawDate || !rawTime || !topicApi) {
       setApiError("Please choose a valid date, time, and session topic.");
       return;
     }
 
-    // Map UI "phone" -> backend "chat"
+    // map phone -> chat (backend enum)
     const sessionType: "video" | "chat" | "offline" =
       uiMode === "phone" ? "chat" : (uiMode as "video" | "offline");
 
     const payload = {
-      // studentId: String(user._id ?? user.id),
       therapistId: selectedTherapist._id,
-      date: rawDate,         // backend parses into Date
+      date: rawDate, // "YYYY-MM-DD"
       time: toAmPm(rawTime), // "10:00 AM"
       sessionType,
-      sessionTopic,
+      topic: topicApi, // ⬅️ match backend field name
     };
 
     try {
       setSubmitLoading(true);
       const { message, booking } = await bookTherapist(payload);
       setPendingBooking(booking);
-      setApiMessage(message || "Booking created. Please confirm within 10 minutes.");
-      setSelectedTherapist(null); // close modal
+      setApiMessage(
+        message || "Booking created. Please confirm within 10 minutes."
+      );
+      setSelectedTherapist(null);
+      // optionally refresh "my bookings" list after creation
+      // await refreshMyBookings();
     } catch (err: any) {
       const msg = err?.response?.data?.message || "Failed to create booking.";
       setApiError(msg);
@@ -199,6 +267,7 @@ export default function BookingPage() {
       const { message, booking } = await confirmBooking(pendingBooking._id);
       setPendingBooking(booking); // status becomes "confirmed"
       setApiMessage(message || "Booking confirmed.");
+      await refreshMyBookings();
     } catch (err: any) {
       const msg = err?.response?.data?.message || "Failed to confirm booking.";
       setApiError(msg);
@@ -207,7 +276,9 @@ export default function BookingPage() {
     }
   };
 
-  const renderSessionIcon = (type: UpcomingSession["type"] | PastSession["type"]) => {
+  const renderSessionIcon = (
+    type: UpcomingSession["type"] | PastSession["type"]
+  ) => {
     if (type === "video") return <Video className="h-3 w-3" />;
     if (type === "phone") return <Phone className="h-3 w-3" />;
     return <MapPin className="h-3 w-3" />;
@@ -221,14 +292,21 @@ export default function BookingPage() {
         {/* Header */}
         <div className="flex items-center justify-between">
           <div className="flex items-center gap-4">
-            <Button variant="ghost" size="sm" className="p-2" onClick={() => navigate(-1)}>
+            <Button
+              variant="ghost"
+              size="sm"
+              className="p-2"
+              onClick={() => navigate('/dashboard')}
+            >
               <ArrowLeft className="h-5 w-5" />
             </Button>
             <div>
-          <h1 className="text-3xl font-semibold tracking-tight">Professional Counselling</h1>
-          <p className="text-sm text-muted-foreground">
-            Confidential sessions with qualified therapists
-          </p>
+              <h1 className="text-3xl font-semibold tracking-tight">
+                Professional Counselling
+              </h1>
+              <p className="text-sm text-muted-foreground">
+                Confidential sessions with qualified therapists
+              </p>
             </div>
           </div>
           <div className="flex items-center gap-3">
@@ -255,8 +333,9 @@ export default function BookingPage() {
                     Your Privacy is Protected
                   </h2>
                   <p className="text-sm text-blue-700 dark:text-blue-200">
-                    All sessions are completely confidential. Your conversations are protected by
-                    client-therapist privilege and never shared without your explicit consent.
+                    All sessions are completely confidential. Your conversations
+                    are protected by client-therapist privilege and never shared
+                    without your explicit consent.
                   </p>
                 </div>
                 <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
@@ -279,13 +358,24 @@ export default function BookingPage() {
         </Card>
 
         {/* Tabs */}
-        <Tabs value={selectedTab} onValueChange={(v) => setSelectedTab(v as typeof selectedTab)}>
+        <Tabs
+          value={selectedTab}
+          onValueChange={(v) => setSelectedTab(v as typeof selectedTab)}
+        >
           <TabsList className="grid w-full grid-cols-3 rounded-full bg-muted/60 p-1 shadow-inner">
-            <TabsTrigger className="rounded-full py-2" value="book">Find Counselor</TabsTrigger>
-            <TabsTrigger className="rounded-full py-2" value="upcoming">
-              Upcoming ({upcomingSessions.length})
+            <TabsTrigger className="rounded-full py-2" value="book">
+              Find Counselor
             </TabsTrigger>
-            <TabsTrigger className="rounded-full py-2" value="history">Session History</TabsTrigger>
+            <TabsTrigger className="rounded-full py-2" value="upcoming">
+              Upcoming ({upcoming.length})
+            </TabsTrigger>
+            <TabsTrigger className="rounded-full py-2" value="history">
+              Session History ({history.length})
+            </TabsTrigger>
+
+            <TabsTrigger className="rounded-full py-2" value="history">
+              Session History
+            </TabsTrigger>
           </TabsList>
 
           {/* Book tab */}
@@ -350,14 +440,18 @@ export default function BookingPage() {
               <Card className="border-0 shadow-sm bg-card dark:bg-slate-900 rounded-3xl">
                 <div className="p-12 text-center space-y-3">
                   <LoadingSpinner size="lg" />
-                  <p className="text-sm text-muted-foreground">Loading counselors...</p>
+                  <p className="text-sm text-muted-foreground">
+                    Loading counselors...
+                  </p>
                 </div>
               </Card>
             ) : error ? (
               <Card className="border-0 shadow-sm bg-card dark:bg-slate-900 rounded-3xl">
                 <div className="p-12 text-center space-y-3">
                   <AlertCircle className="h-12 w-12 mx-auto text-destructive" />
-                  <h3 className="text-lg font-semibold">Something went wrong</h3>
+                  <h3 className="text-lg font-semibold">
+                    Something went wrong
+                  </h3>
                   <p className="text-sm text-muted-foreground">{error}</p>
                   <Button onClick={fetchCounselors}>Retry</Button>
                 </div>
@@ -368,7 +462,8 @@ export default function BookingPage() {
                   <User className="h-12 w-12 mx-auto text-muted-foreground" />
                   <h3 className="text-lg font-semibold">No counselors found</h3>
                   <p className="text-sm text-muted-foreground">
-                    Try adjusting your search keywords or filters to find available counselors.
+                    Try adjusting your search keywords or filters to find
+                    available counselors.
                   </p>
                 </div>
               </Card>
@@ -387,7 +482,9 @@ export default function BookingPage() {
                               <User className="h-10 w-10 text-primary" />
                             </div>
                             <div>
-                                <h3 className="text-lg font-semibold leading-tight">{c.name}</h3>
+                              <h3 className="text-lg font-semibold leading-tight">
+                                {c.name}
+                              </h3>
                               <p className="text-sm text-muted-foreground">
                                 {c.specialization}
                               </p>
@@ -408,7 +505,10 @@ export default function BookingPage() {
                               </div>
                               <div className="flex items-center gap-2">
                                 <Clock className="h-3 w-3" />
-                                <span>{c.availability?.[0] || "Contact for schedule"}</span>
+                                <span>
+                                  {c.availability?.[0] ||
+                                    "Contact for schedule"}
+                                </span>
                               </div>
                             </div>
                           </div>
@@ -424,7 +524,11 @@ export default function BookingPage() {
                           {c.availability && c.availability.length > 1 && (
                             <div className="mt-3 flex flex-wrap gap-2">
                               {c.availability.slice(0, 3).map((slot, index) => (
-                                <Badge key={`${c._id}-${index}`} variant="outline" className="text-xs">
+                                <Badge
+                                  key={`${c._id}-${index}`}
+                                  variant="outline"
+                                  className="text-xs"
+                                >
                                   <Clock className="h-3 w-3 mr-1" />
                                   {slot}
                                 </Badge>
@@ -434,7 +538,7 @@ export default function BookingPage() {
                         </div>
 
                         <div className="flex w-full flex-col gap-3 sm:w-auto sm:flex-row">
-                          <Button onClick={noop}>
+                          <Button onClick={() => navigate(`/message/${c._id}`)}>
                             <MessageCircle className="h-4 w-4 mr-2" />
                             Message
                           </Button>
@@ -459,9 +563,21 @@ export default function BookingPage() {
 
           {/* Upcoming (demo) */}
           <TabsContent value="upcoming" className="space-y-4">
-            {upcomingSessions.length > 0 ? (
-              upcomingSessions.map((session) => (
-                <Card key={session.id} className="border-0 shadow-sm bg-card dark:bg-slate-900 rounded-3xl">
+            {loadingMy ? (
+              <Card className="border-0 shadow-sm bg-card dark:bg-slate-900 rounded-3xl">
+                <div className="p-12 text-center space-y-3">
+                  <LoadingSpinner size="lg" />
+                  <p className="text-sm text-muted-foreground">
+                    Loading your bookings…
+                  </p>
+                </div>
+              </Card>
+            ) : upcoming.length > 0 ? (
+              upcoming.map((b) => (
+                <Card
+                  key={b._id}
+                  className="border-0 shadow-sm bg-card dark:bg-slate-900 rounded-3xl"
+                >
                   <div className="p-6 space-y-4">
                     <div className="flex flex-col lg:flex-row lg:items-start lg:justify-between gap-4">
                       <div className="flex items-start space-x-4">
@@ -469,26 +585,42 @@ export default function BookingPage() {
                           <Calendar className="h-6 w-6 text-green-600" />
                         </div>
                         <div>
-                          <h3 className="font-semibold">{session.counselorName}</h3>
-                          <p className="text-sm text-muted-foreground">{session.sessionType}</p>
+                          <h3 className="font-semibold">
+                            {therapistNameById(b.therapistId)}
+                          </h3>
+                          <p className="text-sm text-muted-foreground capitalize">
+                            {b.topic}
+                          </p>
                           <div className="flex flex-wrap gap-4 mt-2 text-sm text-muted-foreground">
                             <div className="flex items-center space-x-1">
                               <Calendar className="h-3 w-3" />
-                              <span>{session.date.toLocaleDateString()}</span>
+                              <span>{formatDatePretty(b.date)}</span>
                             </div>
                             <div className="flex items-center space-x-1">
                               <Clock className="h-3 w-3" />
-                              <span>{session.time}</span>
+                              <span>{b.time}</span>
                             </div>
                             <div className="flex items-center space-x-1">
-                              {renderSessionIcon(session.type)}
-                              <span className="capitalize">{session.type}</span>
+                              {renderSessionIcon(
+                                b.sessionType === "chat"
+                                  ? "phone"
+                                  : (b.sessionType as any)
+                              )}
+                              <span className="capitalize">
+                                {b.sessionType}
+                              </span>
                             </div>
                           </div>
                         </div>
                       </div>
-                      <Badge className="bg-green-100 text-green-700 dark:bg-green-900/40 dark:text-green-300">
-                        {session.status}
+                      <Badge
+                        className={
+                          b.status === "confirmed"
+                            ? "bg-green-100 text-green-700 dark:bg-green-900/40 dark:text-green-300"
+                            : "bg-amber-100 text-amber-700 dark:bg-amber-900/40 dark:text-amber-300"
+                        }
+                      >
+                        {b.status}
                       </Badge>
                     </div>
                   </div>
@@ -498,11 +630,16 @@ export default function BookingPage() {
               <Card className="border-0 shadow-sm bg-card dark:bg-slate-900 rounded-3xl">
                 <div className="p-12 text-center space-y-4">
                   <Calendar className="h-12 w-12 text-muted-foreground mx-auto" />
-                  <h3 className="text-lg font-semibold">No upcoming sessions</h3>
+                  <h3 className="text-lg font-semibold">
+                    No upcoming sessions
+                  </h3>
                   <p className="text-sm text-muted-foreground">
-                    Book your first session to get started with professional support.
+                    Book your first session to get started with professional
+                    support.
                   </p>
-                  <Button onClick={() => setSelectedTab("book")}>Browse Counselors</Button>
+                  <Button onClick={() => setSelectedTab("book")}>
+                    Browse Counselors
+                  </Button>
                 </div>
               </Card>
             )}
@@ -512,7 +649,10 @@ export default function BookingPage() {
           <TabsContent value="history" className="space-y-4">
             {pastSessions.length > 0 ? (
               pastSessions.map((session) => (
-                <Card key={session.id} className="border-0 shadow-sm bg-card dark:bg-slate-900 rounded-3xl">
+                <Card
+                  key={session.id}
+                  className="border-0 shadow-sm bg-card dark:bg-slate-900 rounded-3xl"
+                >
                   <div className="p-6 space-y-4">
                     <div className="flex items-start justify-between">
                       <div className="flex items-start space-x-4">
@@ -520,8 +660,12 @@ export default function BookingPage() {
                           <BookOpen className="h-6 w-6 text-purple-600" />
                         </div>
                         <div className="space-y-1">
-                          <h3 className="font-semibold">{session.counselorName}</h3>
-                          <p className="text-sm text-muted-foreground">{session.sessionType}</p>
+                          <h3 className="font-semibold">
+                            {session.counselorName}
+                          </h3>
+                          <p className="text-sm text-muted-foreground">
+                            {session.sessionType}
+                          </p>
                           <div className="flex items-center space-x-4 text-sm text-muted-foreground">
                             <div className="flex items-center space-x-1">
                               <Calendar className="h-3 w-3" />
@@ -535,9 +679,14 @@ export default function BookingPage() {
                         </div>
                       </div>
                       <div className="flex items-center space-x-1">
-                        {Array.from({ length: session.rating }).map((_, index) => (
-                          <Star key={`${session.id}-rating-${index}`} className="h-4 w-4 text-yellow-500 fill-current" />
-                        ))}
+                        {Array.from({ length: session.rating }).map(
+                          (_, index) => (
+                            <Star
+                              key={`${session.id}-rating-${index}`}
+                              className="h-4 w-4 text-yellow-500 fill-current"
+                            />
+                          )
+                        )}
                       </div>
                     </div>
                   </div>
@@ -548,7 +697,9 @@ export default function BookingPage() {
                 <div className="p-12 text-center space-y-4">
                   <BookOpen className="h-12 w-12 text-muted-foreground mx-auto" />
                   <h3 className="text-lg font-semibold">No session history</h3>
-                  <p className="text-sm text-muted-foreground">Your completed sessions will appear here.</p>
+                  <p className="text-sm text-muted-foreground">
+                    Your completed sessions will appear here.
+                  </p>
                 </div>
               </Card>
             )}
@@ -564,14 +715,18 @@ export default function BookingPage() {
                 <MessageCircle className="h-5 w-5 text-primary mt-0.5" />
                 <div>
                   <p className="font-medium text-sm">Chat with Support</p>
-                  <p className="text-xs text-muted-foreground">Get help finding the right counselor for your needs</p>
+                  <p className="text-xs text-muted-foreground">
+                    Get help finding the right counselor for your needs
+                  </p>
                 </div>
               </div>
               <div className="flex items-start space-x-3">
                 <Shield className="h-5 w-5 text-green-600 mt-0.5" />
                 <div>
                   <p className="font-medium text-sm">Privacy Policy</p>
-                  <p className="text-xs text-muted-foreground">Learn about our confidentiality protections</p>
+                  <p className="text-xs text-muted-foreground">
+                    Learn about our confidentiality protections
+                  </p>
                 </div>
               </div>
             </div>
@@ -580,7 +735,7 @@ export default function BookingPage() {
       </main>
 
       {/* Bottom navigation */}
-      <div className="fixed bottom-0 left-0 right-0 z-50">
+      <div className="sticky bottom-0 left-0 right-0 z-30">
         <Navigation />
       </div>
 
@@ -615,13 +770,19 @@ export default function BookingPage() {
             <form onSubmit={handleBookingSubmit} className="space-y-4">
               <div>
                 <label className="block text-sm font-medium">Mode</label>
-                <select name="mode" className="w-full border rounded-md p-2" defaultValue="video" required>
+                <select
+                  name="mode"
+                  className="w-full border rounded-md p-2"
+                  defaultValue="video"
+                  required
+                >
                   <option value="video">Video</option>
                   <option value="phone">Chat (Phone/Text)</option>
                   <option value="offline">In-Person</option>
                 </select>
                 <p className="text-xs text-muted-foreground mt-1">
-                  * “Phone/Text” is stored as <strong>chat</strong> in the system.
+                  * “Phone/Text” is stored as <strong>chat</strong> in the
+                  system.
                 </p>
               </div>
 
@@ -639,31 +800,53 @@ export default function BookingPage() {
 
                 <div>
                   <label className="block text-sm font-medium">Time</label>
-                  <input type="time" name="time" className="w-full border rounded-md p-2" required />
-                  <p className="text-xs text-muted-foreground mt-1">We'll convert to 12-hour format.</p>
+                  <input
+                    type="time"
+                    name="time"
+                    className="w-full border rounded-md p-2"
+                    required
+                  />
+                  <p className="text-xs text-muted-foreground mt-1">
+                    We'll convert to 12-hour format.
+                  </p>
                 </div>
               </div>
 
               <div>
-                <label className="block text-sm font-medium">Session Topic</label>
-                <select name="sessionTopic" className="w-full border rounded-md p-2" required>
+                <label className="block text-sm font-medium">
+                  Session Topic
+                </label>
+                <select
+                  name="sessionTopic"
+                  className="w-full border rounded-md p-2"
+                  required
+                >
                   <option value="">Select a topic for your session</option>
-                  {sessionTopics.map((topic) => (
-                    <option key={topic} value={topic}>
-                      {topic}
+                  {TOPIC_OPTIONS.map((t) => (
+                    <option key={t.api} value={t.api}>
+                      {t.label}
                     </option>
                   ))}
                 </select>
                 <p className="text-xs text-muted-foreground mt-1">
-                  Choose the main topic you'd like to discuss during your session
+                  Choose the main topic you'd like to discuss during your
+                  session
                 </p>
               </div>
 
               <div className="flex justify-end gap-3">
-                <Button variant="outline" onClick={() => setSelectedTherapist(null)} type="button">
+                <Button
+                  variant="outline"
+                  onClick={() => setSelectedTherapist(null)}
+                  type="button"
+                >
                   Cancel
                 </Button>
-                <Button type="submit" className="bg-primary" disabled={submitLoading || !user?.id}>
+                <Button
+                  type="submit"
+                  className="bg-primary"
+                  disabled={submitLoading || !user?.id}
+                >
                   {submitLoading ? "Creating…" : "Create Booking"}
                 </Button>
               </div>
@@ -674,93 +857,268 @@ export default function BookingPage() {
 
       {/* Review & Confirm */}
       {pendingBooking && (
-        <Card className="fixed bottom-4 left-4 right-4 sm:left-1/2 sm:-translate-x-1/2 sm:w-[520px] z-50 border shadow-xl">
-          <div className="p-5 space-y-4">
-            <div className="flex items-start justify-between">
-              <div>
-                <h3 className="text-lg font-semibold">Review & Confirm</h3>
-                <p className="text-xs text-muted-foreground">
-                  Booking will auto-expire if not confirmed by{" "}
-                  <strong>
-                    {pendingBooking.expiresAt
-                      ? new Date(pendingBooking.expiresAt).toLocaleTimeString()
-                      : "—"}
-                  </strong>
-                  .
-                </p>
-              </div>
-              <Badge variant={pendingBooking.status === "confirmed" ? "default" : "outline"}>
-                {pendingBooking.status}
-              </Badge>
-            </div>
 
-            {apiMessage && (
-              <div className="text-sm text-green-600 flex items-center gap-2">
-                <CheckCircle2 className="h-4 w-4" /> {apiMessage}
-              </div>
-            )}
-            {apiError && (
-              <div className="text-sm text-red-600 flex items-center gap-2">
-                <AlertCircle className="h-4 w-4" /> {apiError}
-              </div>
-            )}
+<div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4">
 
-            <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 text-sm">
-              <div className="flex items-center gap-2 p-2 bg-muted/30 rounded-lg">
-                <User className="h-4 w-4" />
-                <span>
-                  Therapist: {therapists.find((t) => t._id === pendingBooking.therapistId)?.name || "—"}
-                </span>
-              </div>
-              <div className="flex items-center gap-2 p-2 bg-muted/30 rounded-lg">
-                <Calendar className="h-4 w-4" />
-                <span>{formatDatePretty(pendingBooking.date)}</span>
-              </div>
-              <div className="flex items-center gap-2 p-2 bg-muted/30 rounded-lg">
-                <Clock className="h-4 w-4" />
-                <span>{pendingBooking.time}</span>
-              </div>
-              <div className="flex items-center gap-2 p-2 bg-muted/30 rounded-lg">
-                {pendingBooking.sessionType === "video" ? (
-                  <Video className="h-4 w-4" />
-                ) : pendingBooking.sessionType === "chat" ? (
-                  <Phone className="h-4 w-4" />
-                ) : (
-                  <MapPin className="h-4 w-4" />
-                )}
-                <span className="capitalize">{pendingBooking.sessionType}</span>
-              </div>
-            </div>
+<Card className="bg-white dark:bg-slate-900 pointer-events-auto w-[92%] sm:w-[520px] shadow-2xl rounded-2xl">
 
-            {/* Optional: show link/location if backend returns */}
-            {(pendingBooking.meetingLink || pendingBooking.location) && (
-              <div className="text-xs text-muted-foreground">
-                {pendingBooking.meetingLink && (
-                  <div>Meeting Link: <span className="break-all">{pendingBooking.meetingLink}</span></div>
-                )}
-                {pendingBooking.location && <div>Location: {pendingBooking.location}</div>}
-              </div>
-            )}
+ 
 
-            <div className="flex justify-end gap-2">
-              <Button variant="outline" onClick={() => setPendingBooking(null)}>
-                Close
-              </Button>
-              <Button
-                onClick={handleConfirm}
-                disabled={pendingBooking.status === "confirmed" || confirmLoading}
-                className="bg-primary"
-              >
-                {pendingBooking.status === "confirmed"
-                  ? "Confirmed"
-                  : confirmLoading
-                  ? "Confirming…"
-                  : "Confirm Now"}
-              </Button>
-            </div>
-          </div>
-        </Card>
-      )}
-    </div>
+ <div className="p-5 space-y-4">
+
+  <div className="flex items-start justify-between">
+
+   <div>
+
+    <h3 className="text-lg font-semibold">Review & Confirm</h3>
+
+    <p className="text-xs text-muted-foreground">
+
+     Booking will auto-expire if not confirmed by{" "}
+
+     <strong>
+
+      {pendingBooking.expiresAt
+
+       ? new Date(pendingBooking.expiresAt).toLocaleTimeString()
+
+       : "—"}
+
+     </strong>
+
+     .
+
+    </p>
+
+   </div>
+
+   <Badge
+
+    variant={
+
+     pendingBooking.status === "confirmed" ? "default" : "outline"
+
+    }
+
+   >
+
+    {pendingBooking.status}
+
+   </Badge>
+
+  </div>
+
+
+
+  {apiMessage && (
+
+   <div className="text-sm text-green-600 flex items-center gap-2">
+
+    <CheckCircle2 className="h-4 w-4" /> {apiMessage}
+
+   </div>
+
+  )}
+
+  {apiError && (
+
+   <div className="text-sm text-red-600 flex items-center gap-2">
+
+    <AlertCircle className="h-4 w-4" /> {apiError}
+
+   </div>
+
+  )}
+
+
+
+  <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 text-sm">
+
+   <div className="flex items-center gap-2 p-2 bg-muted/30 rounded-lg">
+
+    <User className="h-4 w-4" />
+
+    <span>
+
+     Therapist:{" "}
+
+     {therapists.find((t) => t._id === pendingBooking.therapistId)
+
+      ?.name || "—"}
+
+    </span>
+
+   </div>
+
+   <div className="flex items-center gap-2 p-2 bg-muted/30 rounded-lg">
+
+    <Calendar className="h-4 w-4" />
+
+    <span>{formatDatePretty(pendingBooking.date)}</span>
+
+   </div>
+
+   <div className="flex items-center gap-2 p-2 bg-muted/30 rounded-lg">
+
+    <Clock className="h-4 w-4" />
+
+    <span>{pendingBooking.time}</span>
+
+   </div>
+
+   <div className="flex items-center gap-2 p-2 bg-muted/30 rounded-lg">
+
+    {pendingBooking.sessionType === "video" ? (
+
+     <Video className="h-4 w-4" />
+
+    ) : pendingBooking.sessionType === "chat" ? (
+
+     <Phone className="h-4 w-4" />
+
+    ) : (
+
+     <MapPin className="h-4 w-4" />
+
+    )}
+
+    <span className="capitalize">{pendingBooking.sessionType}</span>
+
+   </div>
+
+  </div>
+
+
+
+  {/* Optional: show link/location if backend returns */}
+
+  {(pendingBooking.meetingLink || pendingBooking.location) && (
+
+   <div className="text-xs text-muted-foreground">
+
+    {pendingBooking.meetingLink && (
+
+     <div>
+
+      Meeting Link:{" "}
+
+      <span className="break-all">
+
+       {pendingBooking.meetingLink}
+
+      </span>
+
+     </div>
+
+    )}
+
+    {pendingBooking.location && (
+
+     <div>Location: {pendingBooking.location}</div>
+
+    )}
+
+   </div>
+
+  )}
+
+
+
+  <div className="flex justify-end gap-2">
+
+   <Button variant="outline" onClick={() => setPendingBooking(null)}>
+
+    Close
+
+   </Button>
+
+
+
+   <Button
+
+    variant="outline"
+
+    onClick={async () => {
+
+     if (!pendingBooking?._id) return;
+
+     try {
+
+      setConfirmLoading(true);
+
+      await cancelBooking(pendingBooking._id);
+
+      setApiMessage("Booking cancelled.");
+
+      await refreshMyBookings();
+
+      setPendingBooking(null);
+
+     } catch (err: any) {
+
+      const msg =
+
+       err?.response?.data?.message ||
+
+       "Failed to cancel booking.";
+
+      setApiError(msg);
+
+     } finally {
+
+      setConfirmLoading(false);
+
+     }
+
+    }}
+
+   >
+
+    Cancel Booking
+
+   </Button>
+
+
+
+   <Button
+
+    onClick={handleConfirm}
+
+    disabled={
+
+     pendingBooking.status === "confirmed" || confirmLoading
+
+    }
+
+    className="bg-primary"
+
+   >
+
+    {pendingBooking.status === "confirmed"
+
+     ? "Confirmed"
+
+     : confirmLoading
+
+     ? "Confirming…"
+
+     : "Confirm Now"}
+
+   </Button>
+
+  </div>
+
+ </div>
+
+</Card>
+
+</div>
+
+
+
+)}
+
+</div>
+
   );
 }
