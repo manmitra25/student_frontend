@@ -1,5 +1,6 @@
 // src/components/pages/BookingPage.tsx
-import { useCallback, useEffect, useMemo, useState } from "react";
+import React, { useCallback, useEffect, useMemo, useState } from "react";
+import { useNavigate } from "react-router-dom";
 import { Button } from "../ui/button";
 import { Card } from "../ui/card";
 import { Badge } from "../ui/badge";
@@ -12,19 +13,18 @@ import {
   Phone,
   Star,
   User,
-  Languages,
   MessageCircle,
   CheckCircle2,
   Filter,
-  Brain,
   Shield,
   Lock,
-  UserCheck,
   MapPin,
   GraduationCap,
   BookOpen,
   Search,
   X,
+  ArrowLeft,
+  Bell,
 } from "lucide-react";
 import Navigation from "../shared/Navigation";
 import { getTherapists, Therapist } from "../../api/services/therapists";
@@ -51,6 +51,18 @@ function formatDatePretty(value: string | Date) {
     year: "numeric",
   });
 }
+
+// Session topics for booking
+const sessionTopics = [
+  'Self Improvement',
+  'Sexual Wellness',
+  'Abuse & Discrimination',
+  'Academic',
+  'Career',
+  'LGBTQIA+',
+  'Psychological Disorders',
+  'Relationship'
+];
 
 // Demo tabs data (keep empty or hook to a real "my bookings" API later)
 type UpcomingSession = {
@@ -79,6 +91,7 @@ const pastSessions: PastSession[] = [];
 
 export default function BookingPage() {
   const { user } = useApp() as any; // expects user?.id
+  const navigate = useNavigate();
   const [selectedTab, setSelectedTab] = useState<"book" | "upcoming" | "history">("book");
   const [searchQuery, setSearchQuery] = useState("");
   const [showFilters, setShowFilters] = useState(false);
@@ -141,9 +154,10 @@ export default function BookingPage() {
     const rawDate = formData.get("date") as string;        // "YYYY-MM-DD"
     const rawTime = formData.get("time") as string;        // "HH:mm"
     const uiMode = formData.get("mode") as "video" | "phone" | "offline";
+    const sessionTopic = formData.get("sessionTopic") as string;
 
-    if (!rawDate || !rawTime) {
-      setApiError("Please choose a valid date and time.");
+    if (!rawDate || !rawTime || !sessionTopic) {
+      setApiError("Please choose a valid date, time, and session topic.");
       return;
     }
 
@@ -157,6 +171,7 @@ export default function BookingPage() {
       date: rawDate,         // backend parses into Date
       time: toAmPm(rawTime), // "10:00 AM"
       sessionType,
+      sessionTopic,
     };
 
     try {
@@ -204,11 +219,27 @@ export default function BookingPage() {
     <div className="min-h-screen bg-background text-foreground pb-24">
       <main className="max-w-5xl mx-auto px-4 py-8 space-y-6">
         {/* Header */}
-        <div className="space-y-2 text-center">
+        <div className="flex items-center justify-between">
+          <div className="flex items-center gap-4">
+            <Button variant="ghost" size="sm" className="p-2" onClick={() => navigate(-1)}>
+              <ArrowLeft className="h-5 w-5" />
+            </Button>
+            <div>
           <h1 className="text-3xl font-semibold tracking-tight">Professional Counselling</h1>
           <p className="text-sm text-muted-foreground">
             Confidential sessions with qualified therapists
           </p>
+            </div>
+          </div>
+          <div className="flex items-center gap-3">
+            <Badge className="bg-green-100 text-green-700 border-green-200 flex items-center gap-2">
+              <Shield className="h-3 w-3" />
+              100% Confidential
+            </Badge>
+            <Button variant="ghost" size="sm" className="p-2">
+              <Bell className="h-5 w-5" />
+            </Button>
+          </div>
         </div>
 
         {/* Trust card */}
@@ -356,55 +387,28 @@ export default function BookingPage() {
                               <User className="h-10 w-10 text-primary" />
                             </div>
                             <div>
-                              <div className="flex items-center gap-2">
                                 <h3 className="text-lg font-semibold leading-tight">{c.name}</h3>
-                                {c.isOnline && <UserCheck className="h-4 w-4 text-green-600" />}
-                              </div>
                               <p className="text-sm text-muted-foreground">
-                                {c.specialization || "Counselor"}
+                                {c.specialization}
                               </p>
                               <div className="mt-3 flex items-center gap-1">
                                 <Star className="h-4 w-4 text-yellow-500 fill-current" />
                                 <span className="text-sm font-medium">
                                   {c.rating?.toFixed(1)}
                                 </span>
-                                <span className="text-xs text-muted-foreground">
-                                  ({c.reviews} reviews)
-                                </span>
                               </div>
                             </div>
                           </div>
 
                           <div className="flex-1 space-y-4">
-                            <div className="space-y-2">
-                              <p className="text-xs font-semibold text-muted-foreground uppercase tracking-wide">
-                                Languages
-                              </p>
-                              <div className="flex flex-wrap gap-2">
-                                {(c.languages || ["English"]).map((language) => (
-                                  <Badge key={language} variant="outline" className="text-xs">
-                                    {language}
-                                  </Badge>
-                                ))}
-                              </div>
-                            </div>
-
                             <div className="grid grid-cols-1 gap-3 text-xs text-muted-foreground sm:grid-cols-2">
                               <div className="flex items-center gap-2">
                                 <GraduationCap className="h-3 w-3" />
-                                <span>{c.experience || "Shared during consultation"}</span>
-                              </div>
-                              <div className="flex items-center gap-2">
-                                <Brain className="h-3 w-3" />
-                                <span>{c.specialization || "Holistic counseling"}</span>
+                                <span>{c.experience}</span>
                               </div>
                               <div className="flex items-center gap-2">
                                 <Clock className="h-3 w-3" />
-                                <span>{c.availability?.[0] || "Flexible availability"}</span>
-                              </div>
-                              <div className="flex items-center gap-2">
-                                <Languages className="h-3 w-3" />
-                                <span>{c.languages?.join(", ") || "English"}</span>
+                                <span>{c.availability?.[0] || "Contact for schedule"}</span>
                               </div>
                             </div>
                           </div>
@@ -413,7 +417,7 @@ export default function BookingPage() {
 
                       <div className="flex flex-col gap-4 border-t border-border pt-6 sm:flex-row sm:items-center sm:justify-between">
                         <div>
-                          <p className="text-sm font-medium">Next Available:</p>
+                          <p className="text-sm font-medium">Availability:</p>
                           <p className="text-sm text-green-600 dark:text-green-400">
                             {c.availability?.[0] || "Contact for schedule"}
                           </p>
@@ -636,8 +640,23 @@ export default function BookingPage() {
                 <div>
                   <label className="block text-sm font-medium">Time</label>
                   <input type="time" name="time" className="w-full border rounded-md p-2" required />
-                  <p className="text-xs text-muted-foreground mt-1">We’ll convert to 12-hour format.</p>
+                  <p className="text-xs text-muted-foreground mt-1">We'll convert to 12-hour format.</p>
                 </div>
+              </div>
+
+              <div>
+                <label className="block text-sm font-medium">Session Topic</label>
+                <select name="sessionTopic" className="w-full border rounded-md p-2" required>
+                  <option value="">Select a topic for your session</option>
+                  {sessionTopics.map((topic) => (
+                    <option key={topic} value={topic}>
+                      {topic}
+                    </option>
+                  ))}
+                </select>
+                <p className="text-xs text-muted-foreground mt-1">
+                  Choose the main topic you'd like to discuss during your session
+                </p>
               </div>
 
               <div className="flex justify-end gap-3">

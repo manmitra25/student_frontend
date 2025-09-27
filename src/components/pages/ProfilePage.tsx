@@ -104,8 +104,8 @@ export default function ProfilePage() {
   };
 
   const handleLogout = () => {
-    localStorage.removeItem('token');
-    localStorage.removeItem('user');
+    sessionStorage.removeItem('token');
+    sessionStorage.removeItem('user');
     // Clear consent data on logout
     localStorage.removeItem('consent_summary_sharing');
     localStorage.removeItem('consent_data_analytics');

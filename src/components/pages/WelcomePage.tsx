@@ -70,7 +70,7 @@ export default function WelcomePage() {
   const handleGetStarted = () => {
     if (user) {
       const updatedUser = { ...user, isNewUser: false } as const;
-      localStorage.setItem('user', JSON.stringify(updatedUser));
+      sessionStorage.setItem('user', JSON.stringify(updatedUser));
       setUser(updatedUser as any);
     }
     navigate('/dashboard');
@@ -79,7 +79,7 @@ export default function WelcomePage() {
   const handleSkip = () => {
     if (user) {
       const updatedUser = { ...user, isNewUser: false } as const;
-      localStorage.setItem('user', JSON.stringify(updatedUser));
+      sessionStorage.setItem('user', JSON.stringify(updatedUser));
       setUser(updatedUser as any);
     }
     navigate('/dashboard');

@@ -44,7 +44,7 @@ export default function LoginPage() {
         const { data } = await API.post('/student/verify-login', { email, otp });
         const token: string | undefined = data?.token;
         if (token) {
-          localStorage.setItem('token', token);
+          sessionStorage.setItem('token', token);
         }
 
         const userPayload = {
@@ -56,7 +56,7 @@ export default function LoginPage() {
           isNewUser: data?.user?.isNewUser ?? false,
         } as const;
 
-        localStorage.setItem('user', JSON.stringify(userPayload));
+        sessionStorage.setItem('user', JSON.stringify(userPayload));
         setUser(userPayload as any);
 
         if (userPayload.isNewUser) {

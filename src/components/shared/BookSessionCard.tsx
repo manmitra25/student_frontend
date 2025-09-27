@@ -25,11 +25,23 @@ interface BookSessionCardProps {
     date: Date;
     time: string;
     sessionType: 'video' | 'phone' | 'offline';
+    sessionTopic: string;
   }) => void;
 }
 
 const timeSlots = [
   '9:00 AM', '10:00 AM', '11:00 AM', '2:00 PM', '3:00 PM', '4:00 PM', '5:00 PM'
+];
+
+const sessionTopics = [
+  'Self Improvement',
+  'Sexual Wellness',
+  'Abuse & Discrimination',
+  'Academic',
+  'Career',
+  'LGBTQIA+',
+  'Psychological Disorders',
+  'Relationship'
 ];
 
 const sessionTypes = [
@@ -66,22 +78,24 @@ export default function BookSessionCard({
   const [selectedDate, setSelectedDate] = useState<Date | undefined>(new Date());
   const [selectedTime, setSelectedTime] = useState<string | null>(null);
   const [selectedSessionType, setSelectedSessionType] = useState<'video' | 'phone' | 'offline'>('video');
+  const [selectedSessionTopic, setSelectedSessionTopic] = useState<string>('');
   const [showConfirmation, setShowConfirmation] = useState(false);
 
   const handleConfirm = () => {
-    if (selectedDate && selectedTime) {
+    if (selectedDate && selectedTime && selectedSessionTopic) {
       onConfirm({
         counselorId,
         date: selectedDate,
         time: selectedTime,
-        sessionType: selectedSessionType
+        sessionType: selectedSessionType,
+        sessionTopic: selectedSessionTopic
       });
       onClose();
     }
   };
 
   const handleNext = () => {
-    if (selectedDate && selectedTime && selectedSessionType) {
+    if (selectedDate && selectedTime && selectedSessionType && selectedSessionTopic) {
       setShowConfirmation(true);
     }
   };
@@ -94,13 +108,13 @@ export default function BookSessionCard({
 
   return (
     <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-2 sm:p-4">
-      <Card className="w-full max-w-md sm:max-w-lg max-h-[95vh] overflow-hidden bg-card">
+      <Card className="w-full max-w-md sm:max-w-lg max-h-[95vh] overflow-hidden bg-card dark:bg-black">
         <div className="h-full flex flex-col">
           {/* Header */}
           <div className="flex items-center justify-between p-4 border-b border-border flex-shrink-0">
             <div>
-              <h2 className="text-lg sm:text-xl font-semibold text-foreground">Book a Session</h2>
-              <p className="text-sm text-muted-foreground">Complete your booking with {counselorName}</p>
+              <h2 className="text-lg sm:text-xl font-semibold text-foreground dark:text-white">Book a Session</h2>
+              <p className="text-sm text-muted-foreground dark:text-gray-300">Complete your booking with {counselorName}</p>
             </div>
             <Button variant="ghost" size="sm" onClick={onClose}>
               <X className="h-4 w-4" />
@@ -113,11 +127,11 @@ export default function BookSessionCard({
               <>
                 {/* Step 1: Date Selection */}
                 <div className="mb-6">
-                  <h3 className="text-base font-semibold text-foreground mb-3 flex items-center gap-2">
+                  <h3 className="text-base font-semibold text-foreground dark:text-white mb-3 flex items-center gap-2">
                     <CalendarIcon className="h-4 w-4 text-primary" />
                     Select Date
                   </h3>
-                  <Card className="p-3 border-border">
+                  <Card className="p-3 border-border dark:bg-gray-900 dark:border-gray-700">
                     <Calendar
                       mode="single"
                       selected={selectedDate}
@@ -131,7 +145,7 @@ export default function BookSessionCard({
                 {/* Step 2: Time Selection */}
                 {selectedDate && (
                   <div className="mb-6">
-                    <h3 className="text-base font-semibold text-foreground mb-3 flex items-center gap-2">
+                    <h3 className="text-base font-semibold text-foreground dark:text-white mb-3 flex items-center gap-2">
                       <Clock className="h-4 w-4 text-secondary" />
                       Select Time
                     </h3>
@@ -145,7 +159,7 @@ export default function BookSessionCard({
                           className={`${
                             selectedTime === time 
                               ? "bg-primary text-white" 
-                              : "border-border hover:bg-muted/50"
+                              : "border-border hover:bg-muted/50 dark:border-gray-600 dark:hover:bg-gray-800 dark:text-gray-300"
                           }`}
                         >
                           {time}
@@ -155,10 +169,38 @@ export default function BookSessionCard({
                   </div>
                 )}
 
-                {/* Step 3: Session Type */}
+                {/* Step 3: Session Topic Selection */}
                 {selectedDate && selectedTime && (
                   <div className="mb-6">
-                    <h3 className="text-base font-semibold text-foreground mb-3 flex items-center gap-2">
+                    <h3 className="text-base font-semibold text-foreground dark:text-white mb-3 flex items-center gap-2">
+                      <MessageCircle className="h-4 w-4 text-accent" />
+                      Session Topic
+                    </h3>
+                    <div className="space-y-2">
+                      <select
+                        value={selectedSessionTopic}
+                        onChange={(e) => setSelectedSessionTopic(e.target.value)}
+                        className="w-full p-3 border border-border rounded-lg bg-background text-foreground focus:outline-none focus:ring-2 focus:ring-primary/40 dark:bg-gray-800 dark:border-gray-600 dark:text-white"
+                        required
+                      >
+                        <option value="">Select a topic for your session</option>
+                        {sessionTopics.map((topic) => (
+                          <option key={topic} value={topic}>
+                            {topic}
+                          </option>
+                        ))}
+                      </select>
+                      <p className="text-xs text-muted-foreground dark:text-gray-400">
+                        Choose the main topic you'd like to discuss during your session
+                      </p>
+                    </div>
+                  </div>
+                )}
+
+                {/* Step 4: Session Type */}
+                {selectedDate && selectedTime && selectedSessionTopic && (
+                  <div className="mb-6">
+                    <h3 className="text-base font-semibold text-foreground dark:text-white mb-3 flex items-center gap-2">
                       <MessageCircle className="h-4 w-4 text-accent" />
                       Session Type
                     </h3>
@@ -170,24 +212,24 @@ export default function BookSessionCard({
                             key={type.id}
                             className={`p-3 cursor-pointer transition-all border-2 ${
                               selectedSessionType === type.id
-                                ? 'border-primary bg-primary/5'
-                                : 'border-border hover:border-primary/50'
+                                ? 'border-primary bg-primary/5 dark:bg-primary/10'
+                                : 'border-border hover:border-primary/50 dark:border-gray-600 dark:hover:border-primary/50 dark:bg-gray-800'
                             }`}
                             onClick={() => setSelectedSessionType(type.id)}
                           >
                             <div className="flex items-center gap-3">
                               <div className={`w-10 h-10 rounded-full flex items-center justify-center ${
                                 selectedSessionType === type.id
-                                  ? 'bg-primary/20'
-                                  : 'bg-muted/50'
+                                  ? 'bg-primary/20 dark:bg-primary/30'
+                                  : 'bg-muted/50 dark:bg-gray-700'
                               }`}>
                                 <IconComponent className={`h-5 w-5 ${
                                   selectedSessionType === type.id ? 'text-primary' : type.color
                                 }`} />
                               </div>
                               <div className="flex-1">
-                                <h4 className="font-medium text-foreground text-sm">{type.label}</h4>
-                                <p className="text-xs text-muted-foreground">{type.description}</p>
+                                <h4 className="font-medium text-foreground dark:text-white text-sm">{type.label}</h4>
+                                <p className="text-xs text-muted-foreground dark:text-gray-400">{type.description}</p>
                               </div>
                               {selectedSessionType === type.id && (
                                 <CheckCircle className="h-4 w-4 text-primary" />
@@ -204,21 +246,21 @@ export default function BookSessionCard({
               /* Confirmation Step */
               <>
                 <div className="mb-6">
-                  <h3 className="text-base font-semibold text-foreground mb-3 flex items-center gap-2">
+                  <h3 className="text-base font-semibold text-foreground dark:text-white mb-3 flex items-center gap-2">
                     <CheckCircle className="h-4 w-4 text-secondary" />
                     Confirm Your Booking
                   </h3>
                   
-                  <Card className="p-4 border-border">
+                  <Card className="p-4 border-border dark:bg-gray-900 dark:border-gray-700">
                     <div className="space-y-3">
                       <div className="flex justify-between items-center">
-                        <span className="text-muted-foreground text-sm">Counselor:</span>
-                        <span className="font-medium text-foreground text-sm">{counselorName}</span>
+                        <span className="text-muted-foreground dark:text-gray-400 text-sm">Counselor:</span>
+                        <span className="font-medium text-foreground dark:text-white text-sm">{counselorName}</span>
                       </div>
                       
                       <div className="flex justify-between items-center">
-                        <span className="text-muted-foreground text-sm">Date:</span>
-                        <span className="font-medium text-foreground text-sm">
+                        <span className="text-muted-foreground dark:text-gray-400 text-sm">Date:</span>
+                        <span className="font-medium text-foreground dark:text-white text-sm">
                           {selectedDate?.toLocaleDateString('en-US', { 
                             weekday: 'short', 
                             month: 'short', 
@@ -228,21 +270,26 @@ export default function BookSessionCard({
                       </div>
                       
                       <div className="flex justify-between items-center">
-                        <span className="text-muted-foreground text-sm">Time:</span>
-                        <span className="font-medium text-foreground text-sm">{selectedTime}</span>
+                        <span className="text-muted-foreground dark:text-gray-400 text-sm">Time:</span>
+                        <span className="font-medium text-foreground dark:text-white text-sm">{selectedTime}</span>
                       </div>
                       
                       <div className="flex justify-between items-center">
-                        <span className="text-muted-foreground text-sm">Session Type:</span>
-                        <Badge variant="outline" className="capitalize text-xs">
+                        <span className="text-muted-foreground dark:text-gray-400 text-sm">Session Topic:</span>
+                        <span className="font-medium text-foreground dark:text-white text-sm">{selectedSessionTopic}</span>
+                      </div>
+                      
+                      <div className="flex justify-between items-center">
+                        <span className="text-muted-foreground dark:text-gray-400 text-sm">Session Type:</span>
+                        <Badge variant="outline" className="capitalize text-xs dark:border-gray-600 dark:text-gray-300">
                           {selectedSessionType}
                         </Badge>
                       </div>
 
                       {selectedSessionType === 'offline' && (
-                        <div className="flex items-center gap-2 p-3 bg-muted/30 rounded-lg">
+                        <div className="flex items-center gap-2 p-3 bg-muted/30 dark:bg-gray-800 rounded-lg">
                           <MapPin className="h-4 w-4 text-secondary" />
-                          <span className="text-xs text-foreground">
+                          <span className="text-xs text-foreground dark:text-gray-300">
                             Meeting location: Campus Counseling Center
                           </span>
                         </div>
@@ -255,15 +302,15 @@ export default function BookSessionCard({
           </div>
 
           {/* Fixed Footer with Action Buttons */}
-          <div className="flex gap-3 p-4 sm:p-6 pt-4 border-t flex-shrink-0">
+          <div className="flex gap-3 p-4 sm:p-6 pt-4 border-t dark:border-gray-700 flex-shrink-0">
             {!showConfirmation ? (
               <>
-                <Button variant="outline" onClick={onClose} className="flex-1">
+                <Button variant="outline" onClick={onClose} className="flex-1 dark:border-gray-600 dark:text-gray-300 dark:hover:bg-gray-800">
                   Cancel
                 </Button>
                 <Button
                   onClick={handleNext}
-                  disabled={!selectedDate || !selectedTime}
+                  disabled={!selectedDate || !selectedTime || !selectedSessionTopic}
                   className="flex-1 bg-primary hover:bg-primary/90"
                 >
                   Continue
@@ -271,7 +318,7 @@ export default function BookSessionCard({
               </>
             ) : (
               <>
-                <Button variant="outline" onClick={handleBack} className="flex-1">
+                <Button variant="outline" onClick={handleBack} className="flex-1 dark:border-gray-600 dark:text-gray-300 dark:hover:bg-gray-800">
                   Back
                 </Button>
                 <Button

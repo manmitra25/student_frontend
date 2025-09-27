@@ -248,7 +248,7 @@ export default function RegisterPage() {
 
      if (data?.token) {
 
-      localStorage.setItem('token', data.token);
+      sessionStorage.setItem('token', data.token);
 
      }
 
@@ -272,7 +272,7 @@ export default function RegisterPage() {
 
 
 
-     localStorage.setItem('user', JSON.stringify(newUser));
+     sessionStorage.setItem('user', JSON.stringify(newUser));
 
      setUser(newUser as any);
 
