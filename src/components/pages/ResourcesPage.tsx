@@ -81,9 +81,8 @@ const videoUrlMap: { [key: string]: string } = {
   'Deep Sleep Meditation': 'https://www.youtube.com/watch?v=lu_cLaBTXio',
   'Talking to Parents About Mental Health': 'https://www.youtube.com/watch?v=QTy3WQgbt9E',
   'Friendship Boundaries in College': 'https://www.youtube.com/watch?v=Gf4FIt5DG4g',
-  'Finding Your Voice in Engineering Culture': 'https://www.youtube.com/watch?v=Gf4FIt5DG4g', // Same as Friendship Boundaries
-  'Self-Compassion for Perfectionists': 'https://www.youtube.com/watch?v=Gf4FIt5DG4g', // Same as Friendship Boundaries
-  'Crisis Safety Planning Workbook': 'https://www.youtube.com/watch?v=Gf4FIt5DG4g' // Same as Friendship Boundaries
+  'Overcoming Self-Doubt': 'https://www.youtube.com/watch?v=ppBZj7vAFy4', // Same as Friendship Boundaries
+  'Self-Compassion for Perfectionists': 'https://www.youtube.com/watch?v=Prjzmd_haTo', // Same as Friendship Boundaries
 };
 
 const allResources = [
@@ -187,8 +186,8 @@ const allResources = [
   // Self-Discovery Resources
   {
     id: 8,
-    title: 'Finding Your Voice in Engineering Culture',
-    description: 'Build confidence in male-dominated fields while staying true to your values.',
+    title: 'Overcoming Self-Doubt',
+    description: 'Practical strategies to overcome self-doubt and build confidence',
     type: 'video',
     duration: '18 min',
     difficulty: 'Intermediate',
@@ -212,20 +211,7 @@ const allResources = [
     language: 'Hindi/English'
   },
 
-  // Crisis Resources
-  {
-    id: 10,
-    title: 'Crisis Safety Planning Workbook',
-    description: 'Step-by-step guide to create your personal safety plan for mental health emergencies.',
-    type: 'article',
-    duration: '15 min read',
-    difficulty: 'Important',
-    category: 'crisis-resources',
-    rating: 4.9,
-    saves: 892,
-    isNew: false,
-    language: 'Hindi/English'
-  }
+
 ];
 
 export default function ResourcesPage() {
