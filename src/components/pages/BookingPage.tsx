@@ -383,23 +383,33 @@ export default function BookingPage() {
             {/* Search + Filters */}
             <Card className="border-0 shadow-sm rounded-3xl bg-card dark:bg-slate-900">
               <div className="p-5 space-y-4">
-                <div className="flex flex-col sm:flex-row sm:items-center sm:space-x-4 space-y-3 sm:space-y-0">
+                <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:gap-4">
                   <div className="relative flex-1">
-                    <Search className="absolute left-5 top-1/2 -translate-y-1/2 h-5 w-5 text-muted-foreground" />
+                    <Search className="pointer-events-none absolute left-4 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
                     <input
                       type="text"
                       value={searchQuery}
                       onChange={(e) => setSearchQuery(e.target.value)}
                       placeholder="Search by name or specialization..."
-                      className="w-full rounded-full border border-border bg-background px-14 py-3 text-sm shadow-inner focus:outline-none focus:ring-2 focus:ring-primary/40"
+                      className="h-12 w-full rounded-full border border-border bg-background px-11 pr-12 text-sm shadow-inner transition focus:outline-none focus:ring-2 focus:ring-primary/40"
                     />
+                    {searchQuery && (
+                      <button
+                        type="button"
+                        className="absolute right-4 top-1/2 -translate-y-1/2 text-muted-foreground transition hover:text-foreground"
+                        onClick={() => setSearchQuery("")}
+                        aria-label="Clear search"
+                      >
+                        <X className="h-4 w-4" />
+                      </button>
+                    )}
                   </div>
                   <Button
                     variant="outline"
-                    className="rounded-full px-6"
+                    className="h-12 rounded-full px-6"
                     onClick={() => setShowFilters((prev) => !prev)}
                   >
-                    <Filter className="h-4 w-4 mr-2" />
+                    <Filter className="mr-2 h-4 w-4" />
                     Filters
                   </Button>
                 </div>
@@ -472,78 +482,103 @@ export default function BookingPage() {
                 {filteredCounselors.map((c) => (
                   <Card
                     key={c._id}
-                    className="border border-border/60 shadow-sm bg-card dark:bg-slate-900 rounded-3xl h-full"
+                    className="group relative overflow-hidden rounded-3xl border border-border/60 bg-card shadow transition-all hover:-translate-y-1 hover:shadow-xl"
                   >
-                    <div className="flex flex-col h-full p-6 space-y-6">
-                      <div className="flex flex-col gap-6">
-                        <div className="flex flex-col md:flex-row md:items-start md:gap-4">
-                          <div className="flex items-start gap-4 md:flex-col md:items-start">
-                            <div className="w-20 h-20 rounded-2xl bg-gradient-to-br from-primary/20 to-secondary/20 flex items-center justify-center">
-                              <User className="h-10 w-10 text-primary" />
+                    <div className="absolute inset-0 bg-gradient-to-br from-primary/5 via-transparent to-secondary/10 opacity-0 transition-opacity group-hover:opacity-100" />
+                    <div className="relative z-10 flex h-full flex-col gap-6 p-6">
+                      <div className="flex flex-col lg:flex-row lg:items-start lg:justify-between gap-4">
+                        <div className="flex items-start gap-4">
+                          <div className="w-16 h-16 lg:w-20 lg:h-20 rounded-2xl bg-gradient-to-br from-primary/20 via-secondary/20 to-primary/30 flex items-center justify-center shadow-inner">
+                            <User className="h-8 w-8 lg:h-10 lg:w-10 text-primary" />
                             </div>
-                            <div>
-                              <h3 className="text-lg font-semibold leading-tight">
+                          <div className="space-y-2">
+                            <div className="flex flex-wrap items-center gap-2">
+                              <h3 className="text-lg font-semibold leading-tight text-foreground">
                                 {c.name}
                               </h3>
+                              <Badge className="bg-green-100 text-green-700 border-green-200 text-xs dark:bg-green-900/40 dark:text-green-300 dark:border-green-800" variant="secondary">
+                                <CheckCircle2 className="h-3 w-3 mr-1" />
+                                Verified
+                              </Badge>
+                            </div>
                               <p className="text-sm text-muted-foreground">
-                                {c.specialization}
+                              {c.specialization || 'Therapist'}
                               </p>
-                              <div className="mt-3 flex items-center gap-1">
+                            <div className="flex items-center gap-2 text-sm text-muted-foreground">
                                 <Star className="h-4 w-4 text-yellow-500 fill-current" />
-                                <span className="text-sm font-medium">
-                                  {c.rating?.toFixed(1)}
+                              <span className="font-medium text-foreground">
+                                {c.rating?.toFixed(1) ?? '4.9'}
                                 </span>
+                              <span>•</span>
+                              <span>{c.experience || 'Experienced counselor'}</span>
                               </div>
                             </div>
                           </div>
 
-                          <div className="flex-1 space-y-4">
-                            <div className="grid grid-cols-1 gap-3 text-xs text-muted-foreground sm:grid-cols-2">
-                              <div className="flex items-center gap-2">
-                                <GraduationCap className="h-3 w-3" />
-                                <span>{c.experience}</span>
-                              </div>
-                              <div className="flex items-center gap-2">
-                                <Clock className="h-3 w-3" />
-                                <span>
-                                  {c.availability?.[0] ||
-                                    "Contact for schedule"}
+                        <div className="rounded-2xl border border-border/60 bg-muted/50 px-4 py-3 text-xs text-muted-foreground space-y-1">
+                          <p className="uppercase tracking-wide text-[11px] text-muted-foreground/80">Next availability</p>
+                          <p className="text-sm font-semibold text-foreground">
+                            {c.availability?.[0] || 'Reach out for schedule'}
+                          </p>
+                          {c.languages?.length ? (
+                            <div className="flex flex-wrap gap-1.5 text-[11px] text-muted-foreground">
+                              {c.languages.slice(0, 3).map((lang) => (
+                                <span key={lang} className="inline-flex items-center gap-1 rounded-full bg-background/80 px-2 py-1 border border-border/50">
+                                  <MessageCircle className="h-3 w-3" />
+                                  {lang}
                                 </span>
+                              ))}
                               </div>
+                          ) : null}
                             </div>
                           </div>
-                        </div>
+
+                      <div className="grid gap-3 rounded-2xl border border-border/60 bg-muted/40 p-4 text-xs text-muted-foreground sm:grid-cols-2">
+                        <span className="inline-flex items-center gap-2">
+                          <GraduationCap className="h-4 w-4 text-primary" />
+                          {c.education ?? 'Licensed professional'}
+                        </span>
+                        <span className="inline-flex items-center gap-2">
+                          <Clock className="h-4 w-4 text-primary" />
+                          {c.availability?.[1] || 'Flexible slots'}
+                        </span>
+                        <span className="inline-flex items-center gap-2">
+                          <BookOpen className="h-4 w-4 text-primary" />
+                          {(c.focusAreas && c.focusAreas.slice(0, 2).join(', ')) || 'Student wellness'}
+                        </span>
+                        <span className="inline-flex items-center gap-2">
+                          <Shield className="h-4 w-4 text-primary" />
+                          Confidential support guaranteed
+                        </span>
                       </div>
 
-                      <div className="flex flex-col gap-4 border-t border-border pt-6 sm:flex-row sm:items-center sm:justify-between">
-                        <div>
-                          <p className="text-sm font-medium">Availability:</p>
-                          <p className="text-sm text-green-600 dark:text-green-400">
-                            {c.availability?.[0] || "Contact for schedule"}
-                          </p>
-                          {c.availability && c.availability.length > 1 && (
-                            <div className="mt-3 flex flex-wrap gap-2">
-                              {c.availability.slice(0, 3).map((slot, index) => (
+                      <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
+                        <div className="flex flex-wrap items-center gap-2 text-xs text-muted-foreground">
+                          {c.availability?.slice(0, 3).map((slot, index) => (
                                 <Badge
-                                  key={`${c._id}-${index}`}
+                              key={`${c._id}-slot-${index}`}
                                   variant="outline"
-                                  className="text-xs"
+                              className="rounded-full border-border/60 text-foreground"
                                 >
                                   <Clock className="h-3 w-3 mr-1" />
                                   {slot}
                                 </Badge>
                               ))}
-                            </div>
+                          {(c.availability?.length ?? 0) > 3 && (
+                            <span className="text-[11px] text-muted-foreground">+ more slots</span>
                           )}
                         </div>
-
                         <div className="flex w-full flex-col gap-3 sm:w-auto sm:flex-row">
-                          <Button onClick={() => navigate(`/message/${c._id}`)}>
+                          <Button
+                            variant="outline"
+                            className="border-border text-foreground hover:bg-muted/40"
+                            onClick={() => navigate(`/message/${c._id}`)}
+                          >
                             <MessageCircle className="h-4 w-4 mr-2" />
                             Message
                           </Button>
                           <Button
-                            className="bg-primary hover:bg-primary/90"
+                            className="rounded-full bg-primary px-6 text-primary-foreground hover:bg-primary/90"
                             onClick={() => {
                               setApiError(null);
                               setApiMessage(null);
@@ -741,38 +776,46 @@ export default function BookingPage() {
 
       {/* Booking Modal */}
       {selectedTherapist && (
-        <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4">
-          <div className="bg-white dark:bg-slate-900 p-6 rounded-2xl shadow-lg w-full max-w-md relative">
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 p-4">
+          <div className="relative w-full max-w-md overflow-hidden rounded-3xl border border-border/60 bg-card text-foreground shadow-2xl transition-all">
+            <div className="absolute inset-0 bg-gradient-to-br from-primary/5 via-transparent to-secondary/10" />
+            <div className="relative p-6 space-y-5">
             <button
-              className="absolute right-3 top-3 text-muted-foreground hover:text-foreground"
+              className="absolute right-4 top-4 rounded-full bg-muted/50 p-1 text-muted-foreground transition-colors hover:bg-muted hover:text-foreground"
               onClick={() => setSelectedTherapist(null)}
               aria-label="Close"
             >
               <X className="h-5 w-5" />
             </button>
 
-            <h2 className="text-xl font-semibold mb-4">
+            <div className="space-y-2">
+              <Badge className="bg-primary/20 text-primary border-primary/30">Book a Session</Badge>
+              <h2 className="text-xl font-semibold">
               Book Session with {selectedTherapist.name}
             </h2>
+              <p className="text-sm text-muted-foreground">
+                Finalize the details below to reserve your session. You can change or cancel up to 24 hours beforehand.
+              </p>
+            </div>
 
             {apiError && (
-              <div className="mb-3 text-sm text-red-600 flex items-center gap-2">
+              <div className="rounded-xl border border-destructive/40 bg-destructive/10 px-3 py-2 text-sm text-destructive flex items-center gap-2">
                 <AlertCircle className="h-4 w-4" /> {apiError}
               </div>
             )}
 
             {!user?.id && (
-              <div className="mb-3 text-sm text-amber-600">
+              <div className="rounded-xl border border-amber-400/40 bg-amber-400/10 px-3 py-2 text-sm text-amber-600">
                 Please sign in to book a session.
               </div>
             )}
 
             <form onSubmit={handleBookingSubmit} className="space-y-4">
-              <div>
-                <label className="block text-sm font-medium">Mode</label>
+              <div className="space-y-1">
+                <label className="block text-sm font-medium text-foreground">Mode</label>
                 <select
                   name="mode"
-                  className="w-full border rounded-md p-2"
+                  className="w-full rounded-xl border border-border/60 bg-background/90 p-2 text-sm text-foreground focus:outline-none focus:ring-2 focus:ring-primary/40"
                   defaultValue="video"
                   required
                 >
@@ -780,7 +823,7 @@ export default function BookingPage() {
                   <option value="phone">Chat (Phone/Text)</option>
                   <option value="offline">In-Person</option>
                 </select>
-                <p className="text-xs text-muted-foreground mt-1">
+                <p className="text-xs text-muted-foreground">
                   * “Phone/Text” is stored as <strong>chat</strong> in the
                   system.
                 </p>
@@ -788,22 +831,22 @@ export default function BookingPage() {
 
               <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
                 <div>
-                  <label className="block text-sm font-medium">Date</label>
+                  <label className="block text-sm font-medium text-foreground">Date</label>
                   <input
                     type="date"
                     name="date"
                     min={new Date().toISOString().split("T")[0]}
-                    className="w-full border rounded-md p-2"
+                    className="w-full rounded-xl border border-border/60 bg-background/90 p-2 text-sm text-foreground focus:outline-none focus:ring-2 focus:ring-primary/40"
                     required
                   />
                 </div>
 
                 <div>
-                  <label className="block text-sm font-medium">Time</label>
+                  <label className="block text-sm font-medium text-foreground">Time</label>
                   <input
                     type="time"
                     name="time"
-                    className="w-full border rounded-md p-2"
+                    className="w-full rounded-xl border border-border/60 bg-background/90 p-2 text-sm text-foreground focus:outline-none focus:ring-2 focus:ring-primary/40"
                     required
                   />
                   <p className="text-xs text-muted-foreground mt-1">
@@ -812,13 +855,13 @@ export default function BookingPage() {
                 </div>
               </div>
 
-              <div>
-                <label className="block text-sm font-medium">
+              <div className="space-y-1">
+                <label className="block text-sm font-medium text-foreground">
                   Session Topic
                 </label>
                 <select
                   name="sessionTopic"
-                  className="w-full border rounded-md p-2"
+                  className="w-full rounded-xl border border-border/60 bg-background/90 p-2 text-sm text-foreground focus:outline-none focus:ring-2 focus:ring-primary/40"
                   required
                 >
                   <option value="">Select a topic for your session</option>
@@ -828,29 +871,38 @@ export default function BookingPage() {
                     </option>
                   ))}
                 </select>
-                <p className="text-xs text-muted-foreground mt-1">
+                <p className="text-xs text-muted-foreground">
                   Choose the main topic you'd like to discuss during your
                   session
                 </p>
               </div>
 
-              <div className="flex justify-end gap-3">
+              <div className="flex flex-col gap-2 rounded-2xl border border-border/60 bg-muted/40 p-3 text-xs text-muted-foreground">
+                <p className="font-medium text-foreground">Need a different slot?</p>
+                <p>
+                  Book this session now and message the counselor afterwards to adjust your timing if required. They usually respond within 12 hours.
+                </p>
+              </div>
+ 
+              <div className="flex flex-wrap justify-end gap-3">
                 <Button
                   variant="outline"
                   onClick={() => setSelectedTherapist(null)}
                   type="button"
+                  className="rounded-full border-border text-foreground hover:bg-muted/50"
                 >
                   Cancel
                 </Button>
                 <Button
                   type="submit"
-                  className="bg-primary"
+                  className="rounded-full bg-primary px-6 text-primary-foreground shadow-lg shadow-primary/20 hover:bg-primary/90"
                   disabled={submitLoading || !user?.id}
                 >
                   {submitLoading ? "Creating…" : "Create Booking"}
                 </Button>
               </div>
             </form>
+            </div>
           </div>
         </div>
       )}
@@ -864,261 +916,262 @@ export default function BookingPage() {
 
  
 
- <div className="p-5 space-y-4">
+          <div className="p-5 space-y-4">
 
-  <div className="flex items-start justify-between">
+            <div className="flex items-start justify-between">
 
-   <div>
+              <div>
 
-    <h3 className="text-lg font-semibold">Review & Confirm</h3>
+                <h3 className="text-lg font-semibold">Review & Confirm</h3>
 
-    <p className="text-xs text-muted-foreground">
+                <p className="text-xs text-muted-foreground">
 
-     Booking will auto-expire if not confirmed by{" "}
+                  Booking will auto-expire if not confirmed by{" "}
 
-     <strong>
+                  <strong>
 
-      {pendingBooking.expiresAt
+                    {pendingBooking.expiresAt
 
-       ? new Date(pendingBooking.expiresAt).toLocaleTimeString()
+                      ? new Date(pendingBooking.expiresAt).toLocaleTimeString()
 
-       : "—"}
+                      : "—"}
 
-     </strong>
+                  </strong>
 
-     .
+                  .
 
-    </p>
+                </p>
 
-   </div>
+              </div>
 
-   <Badge
+              <Badge
 
-    variant={
+                variant={
 
-     pendingBooking.status === "confirmed" ? "default" : "outline"
+                  pendingBooking.status === "confirmed" ? "default" : "outline"
 
-    }
+                }
 
-   >
+              >
 
-    {pendingBooking.status}
+                {pendingBooking.status}
 
-   </Badge>
+              </Badge>
 
-  </div>
+            </div>
 
 
 
-  {apiMessage && (
 
-   <div className="text-sm text-green-600 flex items-center gap-2">
+            {apiMessage && (
 
-    <CheckCircle2 className="h-4 w-4" /> {apiMessage}
+              <div className="text-sm text-green-600 flex items-center gap-2">
 
-   </div>
+                <CheckCircle2 className="h-4 w-4" /> {apiMessage}
 
-  )}
+              </div>
 
-  {apiError && (
+            )}
 
-   <div className="text-sm text-red-600 flex items-center gap-2">
+            {apiError && (
 
-    <AlertCircle className="h-4 w-4" /> {apiError}
+              <div className="text-sm text-red-600 flex items-center gap-2">
 
-   </div>
+                <AlertCircle className="h-4 w-4" /> {apiError}
 
-  )}
+              </div>
 
+            )}
 
 
-  <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 text-sm">
 
-   <div className="flex items-center gap-2 p-2 bg-muted/30 rounded-lg">
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 text-sm">
 
-    <User className="h-4 w-4" />
+              <div className="flex items-center gap-2 p-2 bg-muted/30 rounded-lg">
 
-    <span>
+                <User className="h-4 w-4" />
 
-     Therapist:{" "}
+                <span>
 
-     {therapists.find((t) => t._id === pendingBooking.therapistId)
+                  Therapist:{" "}
 
-      ?.name || "—"}
+                  {therapists.find((t) => t._id === pendingBooking.therapistId)
 
-    </span>
+                    ?.name || "—"}
 
-   </div>
+                </span>
 
-   <div className="flex items-center gap-2 p-2 bg-muted/30 rounded-lg">
+              </div>
 
-    <Calendar className="h-4 w-4" />
+              <div className="flex items-center gap-2 p-2 bg-muted/30 rounded-lg">
 
-    <span>{formatDatePretty(pendingBooking.date)}</span>
+                <Calendar className="h-4 w-4" />
 
-   </div>
+                <span>{formatDatePretty(pendingBooking.date)}</span>
 
-   <div className="flex items-center gap-2 p-2 bg-muted/30 rounded-lg">
+              </div>
 
-    <Clock className="h-4 w-4" />
+              <div className="flex items-center gap-2 p-2 bg-muted/30 rounded-lg">
 
-    <span>{pendingBooking.time}</span>
+                <Clock className="h-4 w-4" />
 
-   </div>
+                <span>{pendingBooking.time}</span>
 
-   <div className="flex items-center gap-2 p-2 bg-muted/30 rounded-lg">
+              </div>
 
-    {pendingBooking.sessionType === "video" ? (
+              <div className="flex items-center gap-2 p-2 bg-muted/30 rounded-lg">
 
-     <Video className="h-4 w-4" />
+                {pendingBooking.sessionType === "video" ? (
 
-    ) : pendingBooking.sessionType === "chat" ? (
+                  <Video className="h-4 w-4" />
 
-     <Phone className="h-4 w-4" />
+                ) : pendingBooking.sessionType === "chat" ? (
 
-    ) : (
+                  <Phone className="h-4 w-4" />
 
-     <MapPin className="h-4 w-4" />
+                ) : (
 
-    )}
+                  <MapPin className="h-4 w-4" />
 
-    <span className="capitalize">{pendingBooking.sessionType}</span>
+                )}
 
-   </div>
+                <span className="capitalize">{pendingBooking.sessionType}</span>
 
-  </div>
+              </div>
 
+            </div>
 
 
-  {/* Optional: show link/location if backend returns */}
 
-  {(pendingBooking.meetingLink || pendingBooking.location) && (
+            {/* Optional: show link/location if backend returns */}
 
-   <div className="text-xs text-muted-foreground">
+            {(pendingBooking.meetingLink || pendingBooking.location) && (
 
-    {pendingBooking.meetingLink && (
+              <div className="text-xs text-muted-foreground">
 
-     <div>
+                {pendingBooking.meetingLink && (
 
-      Meeting Link:{" "}
+                  <div>
 
-      <span className="break-all">
+                    Meeting Link:{" "}
 
-       {pendingBooking.meetingLink}
+                    <span className="break-all">
 
-      </span>
+                      {pendingBooking.meetingLink}
 
-     </div>
+                    </span>
 
-    )}
+                  </div>
 
-    {pendingBooking.location && (
+                )}
 
-     <div>Location: {pendingBooking.location}</div>
+                {pendingBooking.location && (
 
-    )}
+                  <div>Location: {pendingBooking.location}</div>
 
-   </div>
+                )}
 
-  )}
+              </div>
 
+            )}
 
 
-  <div className="flex justify-end gap-2">
 
-   <Button variant="outline" onClick={() => setPendingBooking(null)}>
+            <div className="flex justify-end gap-2">
 
-    Close
+              <Button variant="outline" onClick={() => setPendingBooking(null)}>
 
-   </Button>
+                Close
 
+              </Button>
 
 
-   <Button
 
-    variant="outline"
+              <Button
 
-    onClick={async () => {
+                variant="outline"
 
-     if (!pendingBooking?._id) return;
+                onClick={async () => {
 
-     try {
+                  if (!pendingBooking?._id) return;
 
-      setConfirmLoading(true);
+                  try {
 
-      await cancelBooking(pendingBooking._id);
+                    setConfirmLoading(true);
 
-      setApiMessage("Booking cancelled.");
+                    await cancelBooking(pendingBooking._id);
 
-      await refreshMyBookings();
+                    setApiMessage("Booking cancelled.");
 
-      setPendingBooking(null);
+                    await refreshMyBookings();
 
-     } catch (err: any) {
+                    setPendingBooking(null);
 
-      const msg =
+                  } catch (err: any) {
 
-       err?.response?.data?.message ||
+                    const msg =
 
-       "Failed to cancel booking.";
+                      err?.response?.data?.message ||
 
-      setApiError(msg);
+                      "Failed to cancel booking.";
 
-     } finally {
+                    setApiError(msg);
 
-      setConfirmLoading(false);
+                  } finally {
 
-     }
+                    setConfirmLoading(false);
 
-    }}
+                  }
 
-   >
+                }}
 
-    Cancel Booking
+              >
 
-   </Button>
+                Cancel Booking
 
+              </Button>
 
 
-   <Button
 
-    onClick={handleConfirm}
+              <Button
 
-    disabled={
+                onClick={handleConfirm}
 
-     pendingBooking.status === "confirmed" || confirmLoading
+                disabled={
 
-    }
+                  pendingBooking.status === "confirmed" || confirmLoading
 
-    className="bg-primary"
+                }
 
-   >
+                className="bg-primary"
 
-    {pendingBooking.status === "confirmed"
+              >
 
-     ? "Confirmed"
+                {pendingBooking.status === "confirmed"
 
-     : confirmLoading
+                  ? "Confirmed"
 
-     ? "Confirming…"
+                  : confirmLoading
 
-     : "Confirm Now"}
+                  ? "Confirming…"
 
-   </Button>
+                  : "Confirm Now"}
 
-  </div>
+              </Button>
 
- </div>
+            </div>
 
-</Card>
+          </div>
 
-</div>
+        </Card>
 
+        </div>
 
 
-)}
 
-</div>
+       )}
+
+    </div>
 
   );
 }

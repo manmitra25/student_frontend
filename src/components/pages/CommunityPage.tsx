@@ -17,11 +17,11 @@ import Navigation from '../shared/Navigation';
 
 const dummyCommunities = [
 
- { _id: '1', name: 'Mental Wellness' },
+  { _id: '1', name: 'Mental Wellness' },
 
- { _id: '2', name: 'Study Stress' },
+  { _id: '2', name: 'Study Stress' },
 
- { _id: '3', name: 'Creative Minds' },
+  { _id: '3', name: 'Creative Minds' },
 
 ];
 
@@ -29,11 +29,11 @@ const dummyCommunities = [
 
 const dummyChannels = [
 
- { _id: 'a', name: 'Gentle Check-ins', description: 'Daily mental health check-ins' },
+  { _id: 'a', name: 'Gentle Check-ins', description: 'Daily mental health check-ins' },
 
- { _id: 'b', name: 'Study Overwhelm', description: 'Academic pressure and deadlines' },
+  { _id: 'b', name: 'Study Overwhelm', description: 'Academic pressure and deadlines' },
 
- { _id: 'c', name: 'Small Victories', description: 'Celebrate small wins' },
+  { _id: 'c', name: 'Small Victories', description: 'Celebrate small wins' },
 
 ];
 
@@ -59,7 +59,7 @@ const dummyMessages: Record<string, any[]> = {
 
  b: [
 
-  { _id: 'b1', author: 'Study Buddy 📚', content: 'Anyone else feeling stressed about exams?', hearts: 0, replies: [], createdAt: new Date().toISOString() },
+    { _id: 'b1', author: 'Study Buddy 📚', content: 'Anyone else feeling stressed about exams?', hearts: 0, replies: [], createdAt: new Date().toISOString() },
 
   { _id: 'b2', author: 'Focus Fox 🦊', content: 'Break down your tasks into smaller steps!', hearts: 2, replies: [], createdAt: new Date().toISOString() },
 
@@ -190,45 +190,45 @@ const channelInsights: Record<string, { mood: string; activeMembers: number; tag
 export default function CommunityPage() {
  const navigate = useNavigate();
 
- const [selectedCommunityId, setSelectedCommunityId] = useState(dummyCommunities[0]._id);
+  const [selectedCommunityId, setSelectedCommunityId] = useState(dummyCommunities[0]._id);
 
- const [selectedChannel, setSelectedChannel] = useState(dummyChannels[0]._id);
+  const [selectedChannel, setSelectedChannel] = useState(dummyChannels[0]._id);
 
- const [messages, setMessages] = useState(dummyMessages[dummyChannels[0]._id]);
+  const [messages, setMessages] = useState(dummyMessages[dummyChannels[0]._id]);
 
- const [message, setMessage] = useState('');
+  const [message, setMessage] = useState('');
 
- const [isAnonymous, setIsAnonymous] = useState(true);
+  const [isAnonymous, setIsAnonymous] = useState(true);
 
- const [notifications, setNotifications] = useState(true);
+  const [notifications, setNotifications] = useState(true);
 
- const [showQuickResponses, setShowQuickResponses] = useState(false);
-
+  const [showQuickResponses, setShowQuickResponses] = useState(false);
+  
  const [likedMessages, setLikedMessages] = useState<string[]>([]);
 
  const [showSupportTips, setShowSupportTips] = useState(true);
 
   
 
+  
+
+  const quickResponses = [
+
+    '🫂 Sending you a virtual hug',
+
+    '💙 You\'re not alone in this',
+
+    '✨ That takes real courage',
+
+    '🌱 Every small step matters',
+
+    '💫 Be gentle with yourself',
+
+  ];
 
 
- const quickResponses = [
 
-  '🫂 Sending you a virtual hug',
-
-  '💙 You\'re not alone in this',
-
-  '✨ That takes real courage',
-
-  '🌱 Every small step matters',
-
-  '💫 Be gentle with yourself',
-
- ];
-
-
-
- const selectedChannelData = dummyChannels.find((c) => c._id === selectedChannel);
+  const selectedChannelData = dummyChannels.find((c) => c._id === selectedChannel);
 
  const selectedCommunity = communityHighlights[selectedCommunityId];
 
@@ -254,145 +254,145 @@ export default function CommunityPage() {
 
 
 
- // Add message
+  // Add message
 
- const handleSendMessage = () => {
+  const handleSendMessage = () => {
 
-  if (!message.trim()) return;
+    if (!message.trim()) return;
 
-  const newMsg = { _id: Date.now().toString(), author: isAnonymous ? 'Anonymous' : 'You', content: message, hearts: 0, replies: [], createdAt: new Date().toISOString() };
+    const newMsg = { _id: Date.now().toString(), author: isAnonymous ? 'Anonymous' : 'You', content: message, hearts: 0, replies: [], createdAt: new Date().toISOString() };
 
-  const updatedMessages = [...messages, newMsg];
+    const updatedMessages = [...messages, newMsg];
 
-  setMessages(updatedMessages);
+    setMessages(updatedMessages);
 
-  dummyMessages[selectedChannel] = updatedMessages; // persist for this channel
+    dummyMessages[selectedChannel] = updatedMessages; // persist for this channel
 
-  setMessage('');
+    setMessage('');
 
-  setShowQuickResponses(false);
+    setShowQuickResponses(false);
 
- };
-
-
-
- // When channel changes
-
- const handleChannelChange = (channelId: string) => {
-
-  setSelectedChannel(channelId);
-
-  setMessages(dummyMessages[channelId] || []);
-
- };
+  };
 
 
 
- // Add heart to message
+  // When channel changes
 
- const addHeart = (msgId: string) => {
+  const handleChannelChange = (channelId: string) => {
+
+    setSelectedChannel(channelId);
+
+    setMessages(dummyMessages[channelId] || []);
+
+  };
+
+
+
+  // Add heart to message
+
+  const addHeart = (msgId: string) => {
 
   if (likedMessages.includes(msgId)) return;
 
-  const updatedMessages = messages.map(msg => msg._id === msgId ? { ...msg, hearts: msg.hearts + 1 } : msg);
+    const updatedMessages = messages.map(msg => msg._id === msgId ? { ...msg, hearts: msg.hearts + 1 } : msg);
 
-  setMessages(updatedMessages);
+    setMessages(updatedMessages);
 
-  dummyMessages[selectedChannel] = updatedMessages;
+    dummyMessages[selectedChannel] = updatedMessages;
 
   setLikedMessages((prev) => [...prev, msgId]);
 
- };
+  };
 
 
 
- // Add reply to message
+  // Add reply to message
 
- const addReply = (msgId: string) => {
+  const addReply = (msgId: string) => {
 
-  const reply = window.prompt('Type your reply:');
+    const reply = window.prompt('Type your reply:');
 
-  if (!reply) return;
+    if (!reply) return;
 
-  const updatedMessages = messages.map(msg => msg._id === msgId ? { ...msg, replies: [...msg.replies, reply] } : msg);
+    const updatedMessages = messages.map(msg => msg._id === msgId ? { ...msg, replies: [...msg.replies, reply] } : msg);
 
-  setMessages(updatedMessages);
+    setMessages(updatedMessages);
 
-  dummyMessages[selectedChannel] = updatedMessages;
+    dummyMessages[selectedChannel] = updatedMessages;
 
- };
-
-
-
- // Quick response click
-
- const handleQuickResponse = (resp: string) => {
-
-  setMessage(message + (message ? ' ' : '') + resp);
-
-  setShowQuickResponses(false);
-
- };
+  };
 
 
 
- return (
+  // Quick response click
+
+  const handleQuickResponse = (resp: string) => {
+
+    setMessage(message + (message ? ' ' : '') + resp);
+
+    setShowQuickResponses(false);
+
+  };
+
+
+
+  return (
 
   <div className="min-h-screen bg-gray-50 transition-colors duration-300">
 
- {/* Header */}
+      {/* Header */}
 
  <header className="bg-white shadow sticky top-0 z-40">
 
-  <div className="max-w-7xl mx-auto px-4 py-4 flex items-center justify-between">
+        <div className="max-w-7xl mx-auto px-4 py-4 flex items-center justify-between">
 
-   <div className="flex items-center gap-4">
+          <div className="flex items-center gap-4">
 
     <Button variant="ghost" size="sm" onClick={() => navigate('/dashboard')}><ArrowLeft className="h-4 w-4" /></Button>
 
-    <div>
+              <div>
 
      <h1 className="text-2xl font-bold">{selectedCommunityMeta?.name} 💙</h1>
 
      <p className="text-sm text-gray-500">{selectedChannelData?.description}</p>
 
-    </div>
+              </div>
 
-   </div>
+          </div>
 
-   <div className="flex items-center gap-2">
+          <div className="flex items-center gap-2">
 
-    <Button variant={isAnonymous ? "default" : "outline"} size="sm" onClick={() => setIsAnonymous(!isAnonymous)}>
+            <Button variant={isAnonymous ? "default" : "outline"} size="sm" onClick={() => setIsAnonymous(!isAnonymous)}>
 
-     {isAnonymous ? <EyeOff className="h-4 w-4 mr-1" /> : <Eye className="h-4 w-4 mr-1" />}
+              {isAnonymous ? <EyeOff className="h-4 w-4 mr-1" /> : <Eye className="h-4 w-4 mr-1" />}
 
-     {isAnonymous ? 'Anonymous' : 'Visible'}
+              {isAnonymous ? 'Anonymous' : 'Visible'}
 
-    </Button>
+            </Button>
 
-    <Button variant="ghost" size="sm" onClick={() => setNotifications(!notifications)}>
+            <Button variant="ghost" size="sm" onClick={() => setNotifications(!notifications)}>
 
-     {notifications ? <Volume2 className="h-4 w-4" /> : <VolumeX className="h-4 w-4" />}
+              {notifications ? <Volume2 className="h-4 w-4" /> : <VolumeX className="h-4 w-4" />}
 
-    </Button>
+            </Button>
 
-   </div>
+          </div>
 
-  </div>
+        </div>
 
- </header>
+      </header>
 
 
 
  <div className="max-w-7xl mx-auto px-4 py-8 grid grid-cols-1 lg:grid-cols-4 gap-6">
 
-  {/* Sidebar */}
+        {/* Sidebar */}
 
   <aside className="lg:col-span-1 space-y-6 sticky top-28">
 
    <Card className="p-4 space-y-4">
 
-    <div>
+            <div>
 
      <label className="block text-sm text-gray-500 mb-2">Select Community</label>
 
@@ -408,21 +408,21 @@ export default function CommunityPage() {
 
       {dummyCommunities.map(c => <option key={c._id} value={c._id}>{c.name}</option>)}
 
-     </select>
+              </select>
 
-    </div>
+            </div>
 
 
 
-    <div className="space-y-2">
+            <div className="space-y-2">
 
      {dummyChannels.map(channel => (
 
-      <button
+                <button
 
-       key={channel._id}
+                  key={channel._id}
 
-       onClick={() => handleChannelChange(channel._id)}
+                  onClick={() => handleChannelChange(channel._id)}
 
        className={`w-full p-3 rounded-xl text-left transition-colors ${
 
@@ -436,11 +436,11 @@ export default function CommunityPage() {
 
        <p className="text-xs text-gray-500">{channel.description}</p>
 
-      </button>
+                </button>
 
-     ))}
+              ))}
 
-    </div>
+            </div>
 
 
 
@@ -460,9 +460,9 @@ export default function CommunityPage() {
 
       ))}
 
-     </div>
+        </div>
 
-    </div>
+            </div>
 
    </Card>
 
@@ -486,7 +486,7 @@ export default function CommunityPage() {
 
       <span className="text-xs text-gray-400">{formatTimestamp(msg.createdAt)}</span>
 
-     </div>
+                  </div>
 
      <p className="text-gray-700">{msg.content}</p>
 
@@ -516,11 +516,11 @@ export default function CommunityPage() {
 
       </Button>
 
-     </div>
+                  </div>
 
 
 
-     {msg.replies.length > 0 && (
+                  {msg.replies.length > 0 && (
 
       <div className="ml-6 mt-2 space-y-1 border-l border-gray-200 pl-2">
 
@@ -530,7 +530,7 @@ export default function CommunityPage() {
 
        ))}
 
-      </div>
+            </div>
 
      )}
 
@@ -546,17 +546,17 @@ export default function CommunityPage() {
 
  <div className="flex items-center gap-2">
 
-  <Input
+              <Input
 
-   value={message}
+                value={message}
 
-   onChange={(e) => setMessage(e.target.value)}
+                onChange={(e) => setMessage(e.target.value)}
 
    placeholder="Type a message…"
 
    className="flex-1 py-3 rounded-xl shadow-sm"
 
-   onKeyPress={(e) => { if (e.key === 'Enter') { e.preventDefault(); handleSendMessage(); } }}
+                onKeyPress={(e) => { if (e.key === 'Enter') { e.preventDefault(); handleSendMessage(); } }}
 
   />
 
@@ -592,7 +592,7 @@ export default function CommunityPage() {
 
   </Button>
 
- </div>
+              </div>
 
 
 
@@ -618,19 +618,19 @@ export default function CommunityPage() {
 
    </Button>
 
-  </div>
+                </div>
 
  )}
 
-</Card>
+          </Card>
 
 
 
   </main>
 
- </div>
+        </div>
 
-</div>
+      </div>
 
   );
 
