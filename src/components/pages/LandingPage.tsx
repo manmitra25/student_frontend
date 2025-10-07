@@ -214,13 +214,13 @@ export default function LandingPage() {
                 </Badge>
               </div>
 
-             <h1 className="text-3xl sm:text-4xl md:text-5xl lg:text-7xl font-bold text-foreground leading-snug sm:leading-tight text-center px-4">
-  Your Mental Health,
-  <span className="bg-gradient-to-r from-primary to-secondary bg-clip-text text-transparent">
-    {" "}Your Safe Space
-  </span>
-</h1>
-
+              <h1 className="text-3xl sm:text-4xl md:text-5xl lg:text-7xl font-bold text-foreground leading-snug sm:leading-tight text-center px-4">
+                Your Mental Health,
+                <span className="bg-gradient-to-r from-primary to-secondary bg-clip-text text-transparent">
+                  {" "}
+                  Your Safe Space
+                </span>
+              </h1>
 
               <p className="text-base sm:text-lg md:text-xl lg:text-2xl text-muted-foreground max-w-2xl sm:max-w-3xl mx-auto mt-4 leading-relaxed text-center px-4">
                 ManMitra आपका विश्वसनीय साथी है। चाहे आप stress, anxiety, या
