@@ -1,74 +1,62 @@
-🎓 ManMitra – Student Web Portal
-📖 Overview
+# 🎓 ManMitra – Student Web Portal
 
-ManMitra is a student-centric mental health web portal, developed under the Smart India Hackathon 2025 (Problem Statement ID: 25092, Higher Education Dept. J&K). It provides a stigma-free, digital-first mental health companion for college students aged 18–25, helping them navigate challenges such as:
+## Overview
+**ManMitra** is a student-centric **mental health web portal**, developed under the **Smart India Hackathon 2025** (Problem Statement ID: 25092, Higher Education Dept. J&K). It provides a **stigma-free, digital-first mental health companion** for college students aged 18–25, helping them navigate challenges such as:
 
-Anxiety, depression, and exam stress
+- Anxiety, depression, and exam stress  
+- Burnout and academic pressure  
+- Social isolation and adjustment issues  
 
-Burnout and academic pressure
+The portal is **lightweight, offline-resilient, and multilingual**, ensuring accessibility for students in rural and semi-urban areas of Jammu & Kashmir.
 
-Social isolation and adjustment issues
+---
 
-The portal is designed to be lightweight, offline-resilient, and multilingual, ensuring accessibility for students in rural and semi-urban areas of Jammu & Kashmir.
+## Key Features
 
-🚀 Key Features
-💬 Bestie Chatbot
+### 💬 Bestie Chatbot
+- AI-powered mental health companion  
+- Provides **first-aid support**, confidential and stigma-free  
 
-AI-powered mental health companion
+### 📖 Journaling & Self-Reflection
+- Track moods, emotions, and daily reflections  
+- Helps build self-awareness and coping strategies  
 
-Provides first-aid support, confidential and stigma-free
+### 🧑‍🤝‍🧑 Peer Support
+- Connect with **trained student volunteers**  
+- Moderated peer-to-peer support for safe sharing  
 
-📖 Journaling & Self-Reflection
+### 🧑‍⚕️ Counselor Access
+- Book sessions with **professional counselors**  
+- Guided help for students in need  
 
-Track moods, emotions, and daily reflections
+### 📝 Well-being Tasks
+- Daily check-ins and mindfulness activities  
+- Progress tracking and motivation nudges  
 
-Helps build self-awareness and coping strategies
+### 🌐 Multilingual Support
+- English, Hindi, Urdu, Hinglish, Roman Urdu  
 
-🧑‍🤝‍🧑 Peer Support
+### 📶 Offline Resilience
+- PWA-ready; works offline and **syncs when internet is available**  
 
-Connect with trained student volunteers
+### 🔔 Reminders & Notifications
+- Nudges for journaling, tasks, and counseling sessions  
 
-Moderated peer-to-peer support for safe sharing
+---
 
-🧑‍⚕️ Counselor Access
+## Tech Stack
 
-Book sessions with professional counselors
+- **Frontend:** React + Vite + TypeScript + TailwindCSS  
+- **Backend APIs:**  
+  - `backend_manmitra/` – Node.js + MongoDB Atlas  
+  - `fast_api2/` – FastAPI AI microservice for chatbot & analytics  
+- **Authentication:** JWT-based (student role)  
+- **Other:** Socket.io (real-time updates), Supabase (auth experiments), Service Workers (offline caching)  
 
-Guided help for students in need
+---
 
-📝 Well-being Tasks
-
-Daily check-ins and mindfulness activities
-
-Progress tracking and motivation nudges
-
-🌐 Multilingual Support
-
-English, Hindi, Urdu, Hinglish, Roman Urdu
-
-📶 Offline Resilience
-
-PWA-ready; works offline and syncs when internet is available
-
-🔔 Reminders & Notifications
-
-Nudges for journaling, tasks, and counseling sessions
-
-🏗️ Tech Stack
-
-Frontend: React + Vite + TypeScript + TailwindCSS
-
-Backend APIs:
-
-backend_manmitra/ – Node.js + MongoDB Atlas
-
-fast_api2/ – FastAPI AI microservice for chatbot & analytics
-
-Authentication: JWT-based (student role)
-
-Other: Socket.io (real-time updates), Supabase (auth experiments), Service Workers (offline caching)
-
-📂 Folder Structure
+## Folder Structure
+```plaintext
 student_frontend/
 │── src/
 │   ├── api/            # API services (Axios, REST calls)
@@ -86,30 +74,7 @@ student_frontend/
 │── vite.config.ts
 │── README.md
 
-⚙️ Setup Instructions
-Prerequisites
-
-Node.js v18+
-
-npm or yarn
-
-Backend services (backend_manmitra/ + fast_api2/) running
-
-Installation
-cd student_frontend
-npm install
-npm run dev
-
-Environment Variables (.env)
-VITE_API_URL=http://localhost:4000        # Node backend
-VITE_AI_URL=http://localhost:8000         # FastAPI backend
-VITE_AUTH_SECRET=your-secret
-
-Build for Production
-npm run build
-npm run preview
-
-🔒 Privacy & Safety
+Privacy & Safety
 
 Anonymous by default – Students are not forced to reveal identity
 
@@ -119,7 +84,7 @@ Crisis escalation – Nudges students to contact counselor/admin if severe distr
 
 GDPR/HIPAA-inspired compliance – No personal data stored without explicit consent
 
-📈 Roadmap
+Roadmap
 
 Offline journaling with auto-sync
 
@@ -128,5 +93,3 @@ Gamified well-being tasks (points/rewards)
 Expand peer-support community with moderation tools
 
 Integration with college ERP for opt-in counselor booking
-
-✅ ManMitra empowers students with digital mental health support – anywhere, anytime.
