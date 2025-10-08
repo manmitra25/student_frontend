@@ -76,13 +76,13 @@ student_frontend/
 
 ```
 **Privacy & Safety**
-Anonymous by default – Students are not forced to reveal identity
-No diagnosis – Bestie chatbot provides first-aid support only
-Crisis escalation – Nudges students to contact counselor/admin if severe distress is detected
-GDPR/HIPAA-inspired compliance – No personal data stored without explicit consent
+- Anonymous by default – Students are not forced to reveal identity
+- No diagnosis – Bestie chatbot provides first-aid support only
+- Crisis escalation – Nudges students to contact counselor/admin if severe distress is detected
+- GDPR/HIPAA-inspired compliance – No personal data stored without explicit consent
 
 **Roadmap**
-Offline journaling with auto-sync
-Gamified well-being tasks (points/rewards)
-Expand peer-support community with moderation tools
-Integration with college ERP for opt-in counselor booking
+- Offline journaling with auto-sync
+- Gamified well-being tasks (points/rewards)
+- Expand peer-support community with moderation tools
+- Integration with college ERP for opt-in counselor booking
