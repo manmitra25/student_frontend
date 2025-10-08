@@ -1,7 +1,7 @@
 import axios from "axios";
 
 const API = axios.create({
-  baseURL: "http://localhost:5000/api", // match backend API prefix
+   baseURL: `${import.meta.env.VITE_API_URL}/api`, // match backend API prefix
   withCredentials: true, // include cookies for session-based endpoints (e.g., /api/chat/*)
 });
 
