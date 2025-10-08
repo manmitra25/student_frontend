@@ -23,100 +23,105 @@ export default function LoginPage() {
   const navigate = useNavigate();
 
   const handleSubmit = async (e: any) => {
-  e.preventDefault();
-  setError('');
-  setIsLoading(true);
+    e.preventDefault();
+    setError("");
+    setIsLoading(true);
 
-  // small helper to finish login when we already have token + user
-  const finishLoginWithToken = (data: any) => {
-    const token: string | undefined = data?.token;
-    // If backend also sends user object (recommended for test bypass), use it.
-    const backendUser = data?.user;
+    // small helper to finish login when we already have token + user
+    const finishLoginWithToken = (data: any) => {
+      const token: string | undefined = data?.token;
+      // If backend also sends user object (recommended for test bypass), use it.
+      const backendUser = data?.user;
 
-    if (token) {
-      sessionStorage.setItem('token', token);
+      if (token) {
+        sessionStorage.setItem("token", token);
 
-      const userPayload = {
-        id: backendUser?.id || data?.userId || 'me',
-        email: backendUser?.email || email,
-        name: backendUser?.name || email.split('@')[0],
-        role: backendUser?.role === 'counsellor' ? 'counsellor' : 'student',
-        college: backendUser?.college || 'unknown',
-        isNewUser: backendUser?.isNewUser ?? false,
-      } as const;
+        const userPayload = {
+          id: backendUser?.id || data?.userId || "me",
+          email: backendUser?.email || email,
+          name: backendUser?.name || email.split("@")[0],
+          role: backendUser?.role === "counsellor" ? "counsellor" : "student",
+          college: backendUser?.college || "unknown",
+          isNewUser: backendUser?.isNewUser ?? false,
+        } as const;
 
-      sessionStorage.setItem('user', JSON.stringify(userPayload));
-      setUser(userPayload as any);
+        sessionStorage.setItem("user", JSON.stringify(userPayload));
+        setUser(userPayload as any);
 
-      if (userPayload.isNewUser) {
-        navigate('/welcome');
-      } else {
-        navigate('/dashboard');
+        if (userPayload.isNewUser) {
+          navigate("/welcome");
+        } else {
+          navigate("/dashboard");
+        }
+
+        return true;
       }
 
-      return true;
-    }
+      return false;
+    };
 
-    return false;
+    try {
+      if (step === "login") {
+        if (!email || !password) {
+          setError("Please enter both email and password");
+          return;
+        }
+
+        // Call login endpoint
+        const { data } = await API.post("/student/login", { email, password });
+
+        // If backend returned a token (bypass case), finish login immediately
+        if (finishLoginWithToken(data)) {
+          return; // done
+        }
+
+        // Otherwise proceed with OTP flow as before
+        setStep("otp");
+      } else {
+        if (!otp) {
+          setError("Please enter the OTP sent to your email");
+          return;
+        }
+
+        // Verify OTP and receive JWT (normal flow)
+        const { data } = await API.post("/student/verify-login", {
+          email,
+          otp,
+        });
+
+        // some backends return token under data.token, some under data?.token
+        if (data?.token) {
+          sessionStorage.setItem("token", data.token);
+        }
+
+        // If backend returns user object in verify response, prefer that
+        const userPayload = {
+          id: data?.user?.id || data?.userId || "me",
+          email: data?.user?.email || email,
+          name: data?.user?.name || email.split("@")[0],
+          role: data?.user?.role === "counsellor" ? "counsellor" : "student",
+          college: data?.user?.college || "unknown",
+          isNewUser: data?.user?.isNewUser ?? false,
+        } as const;
+
+        sessionStorage.setItem("user", JSON.stringify(userPayload));
+        setUser(userPayload as any);
+
+        if (userPayload.isNewUser) {
+          navigate("/welcome");
+        } else {
+          navigate("/dashboard");
+        }
+      }
+    } catch (err: any) {
+      const message =
+        err?.response?.data?.message ||
+        "Authentication failed. Please try again.";
+      setError(message);
+    } finally {
+      setIsLoading(false);
+    }
   };
-
-  try {
-    if (step === 'login') {
-      if (!email || !password) {
-        setError('Please enter both email and password');
-        return;
-      }
-
-      // Call login endpoint
-      const { data } = await API.post('/student/login', { email, password });
-
-      // If backend returned a token (bypass case), finish login immediately
-      if (finishLoginWithToken(data)) {
-        return; // done
-      }
-
-      // Otherwise proceed with OTP flow as before
-      setStep('otp');
-    } else {
-      if (!otp) {
-        setError('Please enter the OTP sent to your email');
-        return;
-      }
-
-      // Verify OTP and receive JWT (normal flow)
-      const { data } = await API.post('/student/verify-login', { email, otp });
-
-      // some backends return token under data.token, some under data?.token
-      if (data?.token) {
-        sessionStorage.setItem('token', data.token);
-      }
-
-      // If backend returns user object in verify response, prefer that
-      const userPayload = {
-        id: data?.user?.id || data?.userId || 'me',
-        email: data?.user?.email || email,
-        name: data?.user?.name || email.split('@')[0],
-        role: data?.user?.role === 'counsellor' ? 'counsellor' : 'student',
-        college: data?.user?.college || 'unknown',
-        isNewUser: data?.user?.isNewUser ?? false,
-      } as const;
-
-      sessionStorage.setItem('user', JSON.stringify(userPayload));
-      setUser(userPayload as any);
-
-      if (userPayload.isNewUser) {
-        navigate('/welcome');
-      } else {
-        navigate('/dashboard');
-      }
-    }
-  } catch (err: any) {
-    const message = err?.response?.data?.message || 'Authentication failed. Please try again.';
-    setError(message);
-  } finally {
-    setIsLoading(false);
-  }
-};
 
   return (
     <div className="min-h-screen bg-background flex items-center justify-center p-4 transition-colors duration-300">
@@ -129,6 +134,16 @@ export default function LoginPage() {
           <h1 className="mm-text-h1 text-foreground mb-2">Welcome back</h1>
           <p className="mm-text-body text-muted-foreground">
             Sign in to continue your wellness journey
+          </p>
+        </div>
+
+        <div className="mb-6 p-4 bg-primary/10 rounded-lg text-center">
+          <h3 className="text-foreground font-semibold mb-2">Demo Login</h3>
+          <p className="text-muted-foreground">
+            <span className="font-medium">Username:</span> test@gmail.com
+          </p>
+          <p className="text-muted-foreground">
+            <span className="font-medium">Password:</span> test@123
           </p>
         </div>
 
