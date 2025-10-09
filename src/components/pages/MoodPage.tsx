@@ -2,80 +2,193 @@ import React, { useState, useEffect } from 'react';
 import { Link } from 'react-router-dom';
 import { Button } from '../ui/button';
 import { Card } from '../ui/card';
-import { Progress } from '../ui/progress';
 import { Badge } from '../ui/badge';
-import { 
-  Heart, 
-  Moon, 
-  Apple, 
-  Dumbbell, 
-  BookOpen, 
-  TrendingUp, 
-  Calendar,
+import {
+  Heart,
+  Moon,
+  Apple,
+  Dumbbell,
+  BookOpen,
   Brain,
-  Smile,
   CheckCircle2,
   Settings,
   ChevronRight,
   Target,
-  Award,
   Flame,
   AlertTriangle,
   Frown,
 } from 'lucide-react';
-import { useApp } from '../../App';
 import Navigation from '../shared/Navigation';
+import LanguageToggle from '../shared/LanguageToggle';
+import { useLanguage } from '../shared/LanguageProvider';
 
-const moodEmojis = ['😰', '😕', '😐', '🙂', '😊'];
-const moodLabels = ['Struggling', 'Low', 'Okay', 'Good', 'Great'];
+type Language = 'en' | 'hi';
+
+const moodOptions = [
+  { value: 1, emoji: '😰', label: { en: 'Struggling', hi: 'संघर्ष कर रहे हैं' } },
+  { value: 2, emoji: '😕', label: { en: 'Low', hi: 'उदास' } },
+  { value: 3, emoji: '😐', label: { en: 'Okay', hi: 'ठीक' } },
+  { value: 4, emoji: '🙂', label: { en: 'Good', hi: 'अच्छा' } },
+  { value: 5, emoji: '😊', label: { en: 'Great', hi: 'बहुत अच्छा' } },
+];
 
 const habitItems = [
-  { id: 'sleep', label: 'Good Sleep', icon: Moon, color: 'purple' },
-  { id: 'food', label: 'Healthy Food', icon: Apple, color: 'green' },
-  { id: 'exercise', label: 'Exercise', icon: Dumbbell, color: 'blue' },
-  { id: 'study', label: 'Study Focus', icon: BookOpen, color: 'amber' }
+  { id: 'sleep', label: { en: 'Good Sleep', hi: 'अच्छी नींद' }, icon: Moon, color: 'purple' },
+  { id: 'food', label: { en: 'Healthy Food', hi: 'स्वस्थ भोजन' }, icon: Apple, color: 'green' },
+  { id: 'exercise', label: { en: 'Exercise', hi: 'व्यायाम' }, icon: Dumbbell, color: 'blue' },
+  { id: 'study', label: { en: 'Study Focus', hi: 'अध्ययन पर ध्यान' }, icon: BookOpen, color: 'amber' },
 ];
 
 const wellnessTests = [
   {
     id: 'gad7',
-    name: 'Are you Anxious',
-    description: '7 quick questions (GAD‑7 style)',
+    name: { en: 'Are You Anxious?', hi: 'क्या आप चिंतित हैं?' },
+    description: { en: '7 quick questions (GAD‑7 style)', hi: '7 त्वरित प्रश्न (GAD‑7 शैली)' },
     progress: 0,
     color: 'orange',
     icon: AlertTriangle,
   },
   {
     id: 'phq9',
-    name: 'Are you Depressed',
-    description: '9 quick questions (PHQ‑9 style)',
+    name: { en: 'Are You Depressed?', hi: 'क्या आप उदास हैं?' },
+    description: { en: '9 quick questions (PHQ‑9 style)', hi: '9 त्वरित प्रश्न (PHQ‑9 शैली)' },
     progress: 0,
     color: 'red',
     icon: Frown,
   },
   {
     id: 'burnout',
-    name: 'Burnout',
-    description: 'Academic/work strain check',
+    name: { en: 'Burnout', hi: 'थकान' },
+    description: { en: 'Academic/work strain check', hi: 'शैक्षणिक/कार्य तनाव जाँच' },
     progress: 0,
     color: 'violet',
     icon: Target,
   },
   {
     id: 'stress',
-    name: 'Are you Stressed',
-    description: '7 quick questions',
+    name: { en: 'Are You Stressed?', hi: 'क्या आप तनाव में हैं?' },
+    description: { en: '7 quick questions', hi: '7 त्वरित प्रश्न' },
     progress: 0,
     color: 'blue',
     icon: Brain,
   },
 ];
 
+const learnCards = [
+  {
+    id: 'stress-relief',
+    to: '/resources/stress-management',
+    icon: Brain,
+    gradient: 'from-red-50 to-red-100',
+    hoverGradient: 'hover:from-red-100 hover:to-red-150',
+    iconColor: 'text-red-600',
+    title: { en: 'Stress Relief', hi: 'तनाव से राहत' },
+    subtitle: { en: '5 min read', hi: '5 मिनट पढ़ें' },
+    titleColor: 'text-red-800',
+    subtitleColor: 'text-red-600',
+  },
+  {
+    id: 'better-sleep',
+    to: '/resources/sleep-wellness',
+    icon: Moon,
+    gradient: 'from-purple-50 to-purple-100',
+    hoverGradient: 'hover:from-purple-100 hover:to-purple-150',
+    iconColor: 'text-purple-600',
+    title: { en: 'Better Sleep', hi: 'बेहतर नींद' },
+    subtitle: { en: '3 min read', hi: '3 मिनट पढ़ें' },
+    titleColor: 'text-purple-800',
+    subtitleColor: 'text-purple-600',
+  },
+];
+
+const quickActions = [
+  {
+    id: 'journal',
+    to: '/journal',
+    icon: Heart,
+    gradient: 'from-primary/10 to-primary/20',
+    hoverGradient: 'hover:from-primary/20 hover:to-primary/30',
+    iconColor: 'text-primary',
+    title: { en: 'Journal', hi: 'जर्नल' },
+    subtitle: { en: 'Reflect on your day', hi: 'अपने दिन पर विचार करें' },
+  },
+  {
+    id: 'resources',
+    to: '/resources',
+    icon: BookOpen,
+    gradient: 'from-secondary/10 to-secondary/20',
+    hoverGradient: 'hover:from-secondary/20 hover:to-secondary/30',
+    iconColor: 'text-secondary',
+    title: { en: 'Resources', hi: 'संसाधन' },
+    subtitle: { en: 'Wellness tools', hi: 'वेलनेस उपकरण' },
+  },
+];
+
+const translations: Record<Language, {
+  headerTitle: string;
+  headerSubtitle: string;
+  stats: {
+    streak: string;
+    mood: string;
+    habits: string;
+  };
+  todaysMoodTitle: string;
+  gratitude: string;
+  dailyHabitsTitle: string;
+  habitsProgress: (completed: number, total: number) => string;
+  wellnessTestsTitle: string;
+  viewAll: string;
+  start: string;
+  testProgress: (progress: number) => string;
+  learnGrowTitle: string;
+  browseAll: string;
+}> = {
+  en: {
+    headerTitle: 'Mood Check',
+    headerSubtitle: 'How are you feeling today?',
+    stats: {
+      streak: 'Day streak',
+      mood: "Today's mood",
+      habits: 'Habits',
+    },
+    todaysMoodTitle: "Today's Mood",
+    gratitude: 'Thanks for sharing! Your mood helps us understand your wellbeing patterns.',
+    dailyHabitsTitle: 'Daily Habits',
+    habitsProgress: (completed, total) => `${completed}/${total} done`,
+    wellnessTestsTitle: 'Wellness Tests',
+    viewAll: 'View all',
+    start: 'Start',
+    testProgress: (progress) => `${progress}% done`,
+    learnGrowTitle: 'Learn & Grow',
+    browseAll: 'Browse all',
+  },
+  hi: {
+    headerTitle: 'मूड चेक',
+    headerSubtitle: 'आज आप कैसा महसूस कर रहे हैं?',
+    stats: {
+      streak: 'दिनों की श्रृंखला',
+      mood: 'आज का मूड',
+      habits: 'आदतें',
+    },
+    todaysMoodTitle: 'आज का मूड',
+    gratitude: 'साझा करने के लिए धन्यवाद! आपका मूड हमें आपकी भलाई के पैटर्न समझने में मदद करता है।',
+    dailyHabitsTitle: 'दैनिक आदतें',
+    habitsProgress: (completed, total) => `${completed}/${total} पूर्ण`,
+    wellnessTestsTitle: 'वेलनेस टेस्ट',
+    viewAll: 'सभी देखें',
+    start: 'शुरू करें',
+    testProgress: (progress) => `${progress}% पूर्ण`,
+    learnGrowTitle: 'सीखें और बढ़ें',
+    browseAll: 'सभी ब्राउज़ करें',
+  },
+};
+
 export default function MoodPage() {
-  const { user } = useApp();
   const [selectedMood, setSelectedMood] = useState<number | null>(null);
   const [habits, setHabits] = useState<Record<string, boolean>>({});
   const [streak, setStreak] = useState(7);
+  const { language } = useLanguage();
+  const t = translations[language];
 
   useEffect(() => {
     // Load saved mood from localStorage
@@ -106,14 +219,17 @@ export default function MoodPage() {
       <div className="bg-card border-b border-border px-4 py-6">
         <div className="flex items-center justify-between mb-4">
           <div>
-            <h1 className="text-2xl font-semibold text-foreground font-poppins">Mood Check</h1>
-            <p className="text-sm text-muted-foreground">How are you feeling today?</p>
+            <h1 className="text-2xl font-semibold text-foreground font-poppins">{t.headerTitle}</h1>
+            <p className="text-sm text-muted-foreground">{t.headerSubtitle}</p>
           </div>
-          <Link to="/profile">
-            <Button variant="ghost" size="sm">
-              <Settings className="h-5 w-5" />
-            </Button>
-          </Link>
+          <div className="flex items-center gap-3">
+            <LanguageToggle showLabel={false} />
+            <Link to="/profile">
+              <Button variant="ghost" size="sm">
+                <Settings className="h-5 w-5" />
+              </Button>
+            </Link>
+          </div>
         </div>
 
         {/* Streak & Stats */}
@@ -123,21 +239,21 @@ export default function MoodPage() {
               <Flame className="h-5 w-5 text-orange-500 mr-1" />
               <span className="text-lg font-semibold text-orange-700">{streak}</span>
             </div>
-            <p className="text-xs text-orange-600">Day streak</p>
+            <p className="text-xs text-orange-600">{t.stats.streak}</p>
           </Card>
           
           <Card className="p-3 text-center border-0 bg-gradient-to-br from-primary/10 to-primary/20">
             <div className="text-lg font-semibold text-primary mb-1">
               {averageMood.toFixed(1)}
             </div>
-            <p className="text-xs text-primary">Today's mood</p>
+            <p className="text-xs text-primary">{t.stats.mood}</p>
           </Card>
           
           <Card className="p-3 text-center border-0 bg-gradient-to-br from-secondary/10 to-secondary/20">
             <div className="text-lg font-semibold text-secondary mb-1">
               {completedHabits}/4
             </div>
-            <p className="text-xs text-secondary">Habits</p>
+            <p className="text-xs text-secondary">{t.stats.habits}</p>
           </Card>
         </div>
       </div>
@@ -146,22 +262,22 @@ export default function MoodPage() {
         {/* Daily Mood Tracker */}
         <Card className="p-6 border-0 shadow-sm">
           <div className="flex items-center justify-between mb-4">
-            <h3 className="text-lg font-semibold text-foreground">Today's Mood</h3>
+            <h3 className="text-lg font-semibold text-foreground">{t.todaysMoodTitle}</h3>
             {selectedMood && (
               <Badge variant="outline" className="text-xs">
-                {moodLabels[selectedMood - 1]}
+                {moodOptions.find((option) => option.value === selectedMood)?.label[language]}
               </Badge>
             )}
           </div>
-          
+
           <div className="grid grid-cols-5 gap-3">
-            {moodEmojis.map((emoji, index) => {
-              const moodValue = index + 1;
+            {moodOptions.map(({ value, emoji }) => {
+              const moodValue = value;
               const isSelected = selectedMood === moodValue;
-              
+
               return (
                 <button
-                  key={index}
+                  key={moodValue}
                   onClick={() => handleMoodSelect(moodValue)}
                   className={`aspect-square rounded-2xl border-2 transition-all duration-200 ${
                     isSelected
@@ -174,11 +290,11 @@ export default function MoodPage() {
               );
             })}
           </div>
-          
+
           {selectedMood && (
             <div className="mt-4 p-3 bg-muted/30 rounded-xl">
               <p className="text-sm text-muted-foreground text-center">
-                Thanks for sharing! Your mood helps us understand your wellbeing patterns.
+                {t.gratitude}
               </p>
             </div>
           )}
@@ -187,8 +303,8 @@ export default function MoodPage() {
         {/* Habit Check-ins */}
         <Card className="p-6 border-0 shadow-sm">
           <div className="flex items-center justify-between mb-4">
-            <h3 className="text-lg font-semibold text-foreground">Daily Habits</h3>
-            <span className="text-sm text-muted-foreground">{completedHabits}/4 done</span>
+            <h3 className="text-lg font-semibold text-foreground">{t.dailyHabitsTitle}</h3>
+            <span className="text-sm text-muted-foreground">{t.habitsProgress(completedHabits, habitItems.length)}</span>
           </div>
           
           <div className="grid grid-cols-2 gap-3">
@@ -218,7 +334,7 @@ export default function MoodPage() {
                       <p className={`text-sm font-medium ${
                         isCompleted ? 'text-foreground' : 'text-muted-foreground'
                       }`}>
-                        {habit.label}
+                        {habit.label[language]}
                       </p>
                     </div>
                     {isCompleted && (
@@ -234,10 +350,10 @@ export default function MoodPage() {
         {/* Wellness Tests */}
         <Card className="p-6 border-0 shadow-sm" data-section="wellness-tests">
           <div className="flex items-center justify-between mb-4">
-            <h3 className="text-lg font-semibold text-foreground">Wellness Tests</h3>
+            <h3 className="text-lg font-semibold text-foreground">{t.wellnessTestsTitle}</h3>
             <Link to="/assessment">
               <Button variant="ghost" size="sm">
-                View all
+                {t.viewAll}
                 <ChevronRight className="h-4 w-4 ml-1" />
               </Button>
             </Link>
@@ -256,18 +372,18 @@ export default function MoodPage() {
                           <Icon className={`h-4 w-4 text-${test.color}-600`} />
                         </div>
                         <div>
-                          <p className="font-medium text-foreground">{test.name}</p>
-                          <p className="text-xs text-muted-foreground">{test.description}</p>
+                          <p className="font-medium text-foreground">{test.name[language]}</p>
+                          <p className="text-xs text-muted-foreground">{test.description[language]}</p>
                         </div>
                       </div>
                       <div className="flex items-center space-x-2">
                         {test.progress > 0 ? (
                           <Badge variant="outline" className="text-xs">
-                            {test.progress}% done
+                            {t.testProgress(test.progress)}
                           </Badge>
                         ) : (
                           <Button variant="outline" size="sm">
-                            Start
+                            {t.start}
                           </Button>
                         )}
                       </div>
@@ -282,59 +398,49 @@ export default function MoodPage() {
         {/* Learn Section */}
         <Card className="p-6 border-0 shadow-sm">
           <div className="flex items-center justify-between mb-4">
-            <h3 className="text-lg font-semibold text-foreground">Learn & Grow</h3>
+            <h3 className="text-lg font-semibold text-foreground">{t.learnGrowTitle}</h3>
             <Link to="/resources">
               <Button variant="ghost" size="sm">
-                Browse all
+                {t.browseAll}
                 <ChevronRight className="h-4 w-4 ml-1" />
               </Button>
             </Link>
           </div>
           
           <div className="grid grid-cols-2 gap-3">
-            <Link to="/resources/stress-management">
-              <Card className="p-4 border-0 bg-gradient-to-br from-red-50 to-red-100 hover:from-red-100 hover:to-red-150 transition-all cursor-pointer">
-                <Brain className="h-6 w-6 text-red-600 mb-2" />
-                <p className="font-medium text-red-800 text-sm">Stress Relief</p>
-                <p className="text-xs text-red-600">5 min read</p>
-              </Card>
-            </Link>
-            
-            <Link to="/resources/sleep-wellness">
-              <Card className="p-4 border-0 bg-gradient-to-br from-purple-50 to-purple-100 hover:from-purple-100 hover:to-purple-150 transition-all cursor-pointer">
-                <Moon className="h-6 w-6 text-purple-600 mb-2" />
-                <p className="font-medium text-purple-800 text-sm">Better Sleep</p>
-                <p className="text-xs text-purple-600">3 min read</p>
-              </Card>
-            </Link>
+            {learnCards.map((card) => {
+              const Icon = card.icon;
+              return (
+                <Link key={card.id} to={card.to}>
+                  <Card className={`p-4 border-0 bg-gradient-to-br ${card.gradient} ${card.hoverGradient} transition-all cursor-pointer`}>
+                    <Icon className={`h-6 w-6 ${card.iconColor} mb-2`} />
+                    <p className={`font-medium ${card.titleColor} text-sm`}>{card.title[language]}</p>
+                    <p className={`text-xs ${card.subtitleColor}`}>{card.subtitle[language]}</p>
+                  </Card>
+                </Link>
+              );
+            })}
           </div>
         </Card>
 
         {/* Quick Actions */}
         <div className="grid grid-cols-2 gap-3">
-          <Link to="/journal">
-            <Card className="p-4 border-0 bg-gradient-to-br from-primary/10 to-primary/20 hover:from-primary/20 hover:to-primary/30 transition-all cursor-pointer">
-              <div className="flex items-center space-x-3">
-                <Heart className="h-6 w-6 text-primary" />
-                <div>
-                  <p className="font-medium text-primary">Journal</p>
-                  <p className="text-xs text-primary/80">Reflect on your day</p>
-                </div>
-              </div>
-            </Card>
-          </Link>
-          
-          <Link to="/resources">
-            <Card className="p-4 border-0 bg-gradient-to-br from-secondary/10 to-secondary/20 hover:from-secondary/20 hover:to-secondary/30 transition-all cursor-pointer">
-              <div className="flex items-center space-x-3">
-                <BookOpen className="h-6 w-6 text-secondary" />
-                <div>
-                  <p className="font-medium text-secondary">Resources</p>
-                  <p className="text-xs text-secondary/80">Wellness tools</p>
-                </div>
-              </div>
-            </Card>
-          </Link>
+          {quickActions.map((action) => {
+            const Icon = action.icon;
+            return (
+              <Link key={action.id} to={action.to}>
+                <Card className={`p-4 border-0 bg-gradient-to-br ${action.gradient} ${action.hoverGradient} transition-all cursor-pointer`}>
+                  <div className="flex items-center space-x-3">
+                    <Icon className={`h-6 w-6 ${action.iconColor}`} />
+                    <div>
+                      <p className={`font-medium ${action.iconColor}`}>{action.title[language]}</p>
+                      <p className="text-xs text-muted-foreground/80">{action.subtitle[language]}</p>
+                    </div>
+                  </div>
+                </Card>
+              </Link>
+            );
+          })}
         </div>
       </div>
 

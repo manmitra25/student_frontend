@@ -56,6 +56,8 @@ import LoadingSpinner from "../shared/LoadingSpinner";
 import { useApp } from "../../App";
 import Navigation from "../shared/Navigation";
 import { ThemeToggle } from "../ui/theme-toggle";
+import LanguageToggle from "../shared/LanguageToggle";
+import { useLanguage } from "../shared/LanguageProvider";
 
 // --- helpers ---
 function toAmPm(hhmm24: string): string {
@@ -114,9 +116,62 @@ type PastSession = {
 const upcomingSessions: UpcomingSession[] = [];
 const pastSessions: PastSession[] = [];
 
+const translations = {
+  en: {
+    headerTitle: 'Professional Counselling',
+    headerSubtitle: 'Confidential sessions with qualified therapists',
+    confidentiality: '100% Confidential',
+    searchPlaceholder: 'Search by name or specialization...',
+    filters: 'Filters',
+    format: 'Format',
+    specialization: 'Specialization',
+    languages: 'Languages',
+    video: 'Video',
+    inPerson: 'In-person',
+    phone: 'Phone',
+    retry: 'Retry',
+    loadingCounselors: 'Loading counselors...',
+    somethingWrong: 'Something went wrong',
+    noCounselorsTitle: 'No counselors found',
+    noCounselorsDescription: 'Try adjusting your search keywords or filters to find available counselors.',
+    bookSession: 'Book Session',
+    availability: 'Next availability',
+    languagesLabel: 'Languages',
+    slotsMore: '+ more slots',
+    verified: 'Verified',
+    meditation: 'Meditation',
+  },
+  hi: {
+    headerTitle: 'व्यावसायिक परामर्श',
+    headerSubtitle: 'कुशल परामर्शदाताओं के साथ गोपनीय सत्र',
+    confidentiality: '100% गोपनीय',
+    searchPlaceholder: 'नाम या विशेषज्ञता से खोजें...',
+    filters: 'फ़िल्टर',
+    format: 'प्रारूप',
+    specialization: 'विशेषज्ञता',
+    languages: 'भाषाएँ',
+    video: 'वीडियो',
+    inPerson: 'सामने मिलना',
+    phone: 'टेलीफोन',
+    retry: 'दोबारा प्रयास करें',
+    loadingCounselors: 'परामर्शदाताओं को लोड किया जा रहा है...',
+    somethingWrong: 'कुछ गलत हो गया',
+    noCounselorsTitle: 'कोई परामर्शदाता नहीं मिला',
+    noCounselorsDescription: 'उपलब्ध परामर्शदाताओं को खोजने के लिए अपने खोज शब्द या फ़िल्टर समायोजित करें।',
+    bookSession: 'सत्र बुक करें',
+    availability: 'अगली उपलब्धता',
+    languagesLabel: 'भाषाएँ',
+    slotsMore: '+ अधिक स्लॉट',
+    verified: 'पुष्टि',
+    meditation: 'ध्यान',
+  },
+} as const;
+
 export default function BookingPage() {
   const { user } = useApp() as any; // expects user?.id
   const navigate = useNavigate();
+  const { language } = useLanguage();
+  const t = translations[language];
   const [selectedTab, setSelectedTab] = useState<
     "book" | "upcoming" | "history"
   >("book");
@@ -309,18 +364,19 @@ export default function BookingPage() {
             </Button>
             <div className="min-w-0">
               <h1 className="text-2xl sm:text-3xl font-semibold tracking-tight truncate">
-                Professional Counselling
+                {t.headerTitle}
               </h1>
               <p className="text-sm text-muted-foreground">
-                Confidential sessions with qualified therapists
+                {t.headerSubtitle}
               </p>
             </div>
           </div>
           <div className="flex items-center gap-3 flex-shrink-0">
+            <LanguageToggle />
             <ThemeToggle />
             <Badge className="bg-green-100 text-green-700 border-green-200 flex items-center gap-2">
               <Shield className="h-3 w-3" />
-              100% Confidential
+              {t.confidentiality}
             </Badge>
             <Button variant="ghost" size="sm" className="p-2">
               <Bell className="h-5 w-5" />
@@ -394,7 +450,7 @@ export default function BookingPage() {
                       type="text"
                       value={searchQuery}
                       onChange={(e) => setSearchQuery(e.target.value)}
-                      placeholder="Search by name or specialization..."
+                      placeholder={t.searchPlaceholder}
                       className="h-12 w-full rounded-full border border-border bg-background px-11 pr-12 text-sm shadow-inner transition focus:outline-none focus:ring-2 focus:ring-primary/40"
                     />
                     {searchQuery && (
@@ -414,7 +470,7 @@ export default function BookingPage() {
                     onClick={() => setShowFilters((prev) => !prev)}
                   >
                     <Filter className="mr-2 h-4 w-4" />
-                    Filters
+                    {t.filters}
                   </Button>
                 </div>
 
@@ -455,7 +511,7 @@ export default function BookingPage() {
                 <div className="p-12 text-center space-y-3">
                   <LoadingSpinner size="lg" />
                   <p className="text-sm text-muted-foreground">
-                    Loading counselors...
+                    {t.loadingCounselors}
                   </p>
                 </div>
               </Card>
@@ -464,10 +520,10 @@ export default function BookingPage() {
                 <div className="p-12 text-center space-y-3">
                   <AlertCircle className="h-12 w-12 mx-auto text-destructive" />
                   <h3 className="text-lg font-semibold">
-                    Something went wrong
+                    {t.somethingWrong}
                   </h3>
                   <p className="text-sm text-muted-foreground">{error}</p>
-                  <Button onClick={fetchCounselors}>Retry</Button>
+                  <Button onClick={fetchCounselors}>{t.retry}</Button>
                 </div>
               </Card>
             ) : filteredCounselors.length === 0 ? (
@@ -505,7 +561,7 @@ export default function BookingPage() {
                                 variant="secondary"
                               >
                                 <CheckCircle2 className="h-3 w-3 mr-1" />
-                                Verified
+                                {t.verified}
                               </Badge>
                             </div>
                             <p className="text-sm text-muted-foreground">
@@ -526,7 +582,7 @@ export default function BookingPage() {
 
                         <div className="rounded-2xl border border-border/60 bg-muted/50 px-4 py-3 text-xs text-muted-foreground space-y-1">
                           <p className="uppercase tracking-wide text-[11px] text-muted-foreground/80">
-                            Next availability
+                            {t.availability}
                           </p>
                           <p className="text-sm font-semibold text-foreground">
                             {c.availability?.[0] || "Reach out for schedule"}
@@ -582,7 +638,7 @@ export default function BookingPage() {
                           ))}
                           {(c.availability?.length ?? 0) > 3 && (
                             <span className="text-[11px] text-muted-foreground">
-                              + more slots
+                              {t.slotsMore}
                             </span>
                           )}
                         </div>
@@ -603,7 +659,7 @@ export default function BookingPage() {
                               setSelectedTherapist(c);
                             }}
                           >
-                            Book Session
+                            {t.bookSession}
                           </Button>
                         </div>
                       </div>

@@ -36,6 +36,8 @@ import {
 import { useApp } from "../../App";
 import Navigation from "../shared/Navigation";
 import { downloadCounselorPdf } from "../../api/services/reports";
+import LanguageToggle from "../shared/LanguageToggle";
+import { useLanguage } from "../shared/LanguageProvider";
 
 const moodOptions = [
   { emoji: "😊", label: "Energized", value: 5, color: "text-secondary" },
@@ -67,12 +69,90 @@ const quickActions = [
   { label: "Peer Chat", icon: Users, path: "/community", color: "violet-500" },
 ];
 
+const translations = {
+  en: {
+    quickAssessment: "Quick Assessment",
+    resources: "Resources",
+    crisisSupport: "Crisis Support",
+    peerChat: "Peer Chat",
+    studyTime: "Study Time",
+    tasksDone: "Tasks Done",
+    currentMood: "Current Mood",
+    moodQuestion: "How are you feeling right now?",
+    moodSubtitle: "(helps us personalize your experience)",
+    moodLocked: "Mood locked for today • You can change it tomorrow",
+    quickActionsTitle: "Quick Actions",
+    bestieTitle: "Bestie",
+    bestieDescription: "Your AI companion for academics, stress, and life challenges",
+    counselorsTitle: "Connect with Counselors",
+    counselorsDescription: "Book sessions with licensed counselors who understand student life",
+    resourceHubTitle: "Resource Hub",
+    resourceHubDescription: "Wellness resources, videos, and tools for your mental health journey",
+    communityTitle: "Community",
+    communityDescription: "Connect anonymously with peers facing similar challenges",
+    wellnessResources: "Wellness Resources",
+    stressRelief: "Stress Relief",
+    studyTips: "Study Tips",
+    mindfulness: "Mindfulness",
+    sleepBetter: "Sleep Better",
+    personalJournal: "Personal Journal",
+    personalJournalDescription: "Track thoughts, gratitude, and daily reflections",
+    progressTracker: "Progress Tracker",
+    progressTrackerDescription: "See your wellness and academic journey",
+    progressWeek: "This week",
+    progressImprovement: "+12% improvement",
+    lowMoodAction: {
+      talkBuddy: "Talk to AI Buddy",
+      getHelp: "Get Help Now",
+    },
+    languageLabel: "Language",
+  },
+  hi: {
+    quickAssessment: "त्वरित मूल्यांकन",
+    resources: "संसाधन",
+    crisisSupport: "आपातकालीन सहायता",
+    peerChat: "सहपाठी चैट",
+    studyTime: "अध्ययन समय",
+    tasksDone: "पूरे कार्य",
+    currentMood: "वर्तमान मूड",
+    moodQuestion: "आप अभी कैसा महसूस कर रहे हैं?",
+    moodSubtitle: "(हमें आपके अनुभव को वैयक्तिकृत करने में मदद करता है)",
+    moodLocked: "आज के लिए मूड लॉक है • आप इसे कल बदल सकते हैं",
+    quickActionsTitle: "त्वरित क्रियाएं",
+    bestieTitle: "बेस्टी",
+    bestieDescription: "शिक्षा, तनाव और जीवन की चुनौतियों के लिए आपका AI साथी",
+    counselorsTitle: "परामर्शदाताओं से जुड़ें",
+    counselorsDescription: "लाइसेंस प्राप्त परामर्शदाताओं के साथ सत्र बुक करें जो छात्र जीवन को समझते हैं",
+    resourceHubTitle: "संसाधन केंद्र",
+    resourceHubDescription: "आपके मानसिक स्वास्थ्य यात्रा के लिए संसाधन, वीडियो और उपकरण",
+    communityTitle: "समुदाय",
+    communityDescription: "इसी तरह की चुनौतियों का सामना कर रहे साथियों से गुमनाम रूप से जुड़ें",
+    wellnessResources: "कल्याण संसाधन",
+    stressRelief: "तनाव मुक्ति",
+    studyTips: "अध्ययन टिप्स",
+    mindfulness: "सचेतन",
+    sleepBetter: "बेहतर नींद",
+    personalJournal: "व्यक्तिगत जर्नल",
+    personalJournalDescription: "विचारों, आभार और दैनिक प्रतिबिंब को ट्रैक करें",
+    progressTracker: "प्रगति ट्रैकर",
+    progressTrackerDescription: "अपनी कल्याण और शैक्षणिक यात्रा देखें",
+    progressWeek: "इस सप्ताह",
+    progressImprovement: "+12% सुधार",
+    lowMoodAction: {
+      talkBuddy: "AI साथी से बात करें",
+      getHelp: "तुरंत सहायता लें",
+    },
+    languageLabel: "भाषा",
+  },
+} as const;
+
 export default function Dashboard() {
   const { user, setUser } = useApp();
   const navigate = useNavigate();
   const [selectedMood, setSelectedMood] = useState<number | null>(null);
   const [moodLocked, setMoodLocked] = useState(false);
   const [currentTime, setCurrentTime] = useState(new Date());
+  const { language, setLanguage } = useLanguage();
   const [todayProgress] = useState({
     mood: 3,
     studyHours: 4.5,
@@ -85,6 +165,8 @@ export default function Dashboard() {
     const timer = setInterval(() => setCurrentTime(new Date()), 60000);
     return () => clearInterval(timer);
   }, []);
+
+  const t = translations[language];
 
   const getGreeting = () => {
     const hour = currentTime.getHours();
@@ -187,6 +269,7 @@ export default function Dashboard() {
             </div>
 
             <div className="flex items-center mm-gap-2">
+              <LanguageToggle />
               <ThemeToggle />
               <Link to="/crisis">
                 <Button size="sm" className="crisis-support mm-btn-sm">
@@ -214,13 +297,13 @@ export default function Dashboard() {
             <div className="mm-text-h3 text-secondary font-bold">
               {todayProgress.studyHours}h
             </div>
-            <div className="mm-text-xs text-muted-foreground">Study Time</div>
+            <div className="mm-text-xs text-muted-foreground">{t.studyTime}</div>
           </div>
           <div className="bg-primary/10 rounded-xl p-3 text-center">
             <div className="mm-text-h3 text-primary font-bold">
               {todayProgress.completedTasks}/{todayProgress.totalTasks}
             </div>
-            <div className="mm-text-xs text-muted-foreground">Tasks Done</div>
+            <div className="mm-text-xs text-muted-foreground">{t.tasksDone}</div>
           </div>
           <div className="bg-accent/10 rounded-xl p-3 text-center">
             <div className="mm-text-h3 text-accent font-bold">
@@ -228,7 +311,7 @@ export default function Dashboard() {
                 ? moodOptions.find((m) => m.value === selectedMood)?.emoji
                 : "😐"}
             </div>
-            <div className="mm-text-xs text-muted-foreground">Current Mood</div>
+            <div className="mm-text-xs text-muted-foreground">{t.currentMood}</div>
           </div>
         </div>
 
@@ -236,9 +319,9 @@ export default function Dashboard() {
         <div className="bg-muted/30 rounded-xl p-4">
           <p className="mm-text-small text-foreground mb-4 flex items-center justify-center mm-gap-2 text-center">
             <Heart className="h-4 w-4 text-accent" />
-            How are you feeling right now?{" "}
+            {t.moodQuestion}{" "}
             <span className="text-muted-foreground">
-              (helps us personalize your experience)
+              {t.moodSubtitle}
             </span>
           </p>
           <div className="flex justify-center mm-gap-3 mb-4">
@@ -266,7 +349,7 @@ export default function Dashboard() {
               </p>
               {moodLocked && (
                 <p className="mm-text-xs text-muted-foreground mt-2">
-                  Mood locked for today • You can change it tomorrow
+                  {t.moodLocked}
                 </p>
               )}
             </div>
@@ -286,7 +369,15 @@ export default function Dashboard() {
                 onClick={handleQuickAssessment}
               >
                 <action.icon className="h-4 w-4 sm:h-5 sm:w-5 mb-1" />
-                <span className="mm-text-xs">{action.label}</span>
+                <span className="mm-text-xs">
+                  {action.label === "Quick Assessment"
+                    ? t.quickAssessment
+                    : action.label === "Resources"
+                    ? t.resources
+                    : action.label === "Crisis Support"
+                    ? t.crisisSupport
+                    : t.peerChat}
+                </span>
               </Button>
             ) : (
               <Link key={action.label} to={action.path}>
@@ -295,7 +386,13 @@ export default function Dashboard() {
                   className={`w-full flex-col h-14 sm:h-16 border-${action.color}/20 text-${action.color} hover:bg-${action.color}/5`}
                 >
                   <action.icon className="h-4 w-4 sm:h-5 sm:w-5 mb-1" />
-                  <span className="mm-text-xs">{action.label}</span>
+                  <span className="mm-text-xs">
+                    {action.label === "Resources"
+                      ? t.resources
+                      : action.label === "Crisis Support"
+                      ? t.crisisSupport
+                      : t.peerChat}
+                  </span>
                 </Button>
               </Link>
             )
@@ -316,10 +413,10 @@ export default function Dashboard() {
                 </Badge>
               </div>
               <h3 className="mm-text-h3 text-foreground mb-1 sm:mb-2">
-                Bestie
+                {t.bestieTitle}
               </h3>
               <p className="mm-text-small text-muted-foreground">
-                Your AI companion for academics, stress, and life challenges
+                {t.bestieDescription}
               </p>
             </Card>
           </Link>
@@ -336,11 +433,10 @@ export default function Dashboard() {
                 </div>
               </div>
               <h3 className="mm-text-h3 text-foreground mb-1 sm:mb-2">
-                Connect with Counselors
+                {t.counselorsTitle}
               </h3>
               <p className="mm-text-small text-muted-foreground">
-                Book sessions with licensed counselors who understand student
-                life
+                {t.counselorsDescription}
               </p>
             </Card>
           </Link>
@@ -355,11 +451,10 @@ export default function Dashboard() {
                 <Badge className="bg-accent text-white mm-text-xs">New!</Badge>
               </div>
               <h3 className="mm-text-h3 text-foreground mb-1 sm:mb-2">
-                Resource Hub
+                {t.resourceHubTitle}
               </h3>
               <p className="mm-text-small text-muted-foreground">
-                Wellness resources, videos, and tools for your mental health
-                journey
+                {t.resourceHubDescription}
               </p>
             </Card>
           </Link>
@@ -374,10 +469,10 @@ export default function Dashboard() {
                 <div className="w-2 h-2 bg-secondary rounded-full animate-pulse"></div>
               </div>
               <h3 className="mm-text-h3 text-foreground mb-1 sm:mb-2">
-                Community
+                {t.communityTitle}
               </h3>
               <p className="mm-text-small text-muted-foreground">
-                Connect anonymously with peers facing similar challenges
+                {t.communityDescription}
               </p>
             </Card>
           </Link>
@@ -387,7 +482,7 @@ export default function Dashboard() {
         <div className="mb-6 sm:mb-8">
           <div className="flex items-center mm-gap-2 mb-3 sm:mb-4">
             <BookOpen className="h-4 w-4 sm:h-5 sm:w-5 text-accent" />
-            <h2 className="mm-text-h2 text-foreground">Wellness Resources</h2>
+            <h2 className="mm-text-h2 text-foreground">{t.wellnessResources}</h2>
           </div>
           <div className="grid grid-cols-2 sm:grid-cols-4 gap-2 sm:gap-3">
             <Link to="/mood">
@@ -396,7 +491,7 @@ export default function Dashboard() {
                   <Brain className="h-4 w-4 sm:h-5 sm:w-5 text-red-500" />
                 </div>
                 <h4 className="mm-text-small font-medium text-foreground">
-                  Stress Relief
+                  {t.stressRelief}
                 </h4>
               </Card>
             </Link>
@@ -406,7 +501,7 @@ export default function Dashboard() {
                   <BookMarked className="h-4 w-4 sm:h-5 sm:w-5 text-blue-500" />
                 </div>
                 <h4 className="mm-text-small font-medium text-foreground">
-                  Study Tips
+                  {t.studyTips}
                 </h4>
               </Card>
             </Link>
@@ -416,7 +511,7 @@ export default function Dashboard() {
                   <Heart className="h-4 w-4 sm:h-5 sm:w-5 text-green-500" />
                 </div>
                 <h4 className="mm-text-small font-medium text-foreground">
-                  Mindfulness
+                  {t.mindfulness}
                 </h4>
               </Card>
             </Link>
@@ -426,7 +521,7 @@ export default function Dashboard() {
                   <Moon className="h-4 w-4 sm:h-5 sm:w-5 text-purple-500" />
                 </div>
                 <h4 className="mm-text-small font-medium text-foreground">
-                  Sleep Better
+                  {t.sleepBetter}
                 </h4>
               </Card>
             </Link>
@@ -446,7 +541,7 @@ export default function Dashboard() {
                     Personal Journal
                   </h3>
                   <p className="mm-text-small text-muted-foreground">
-                    Track thoughts, gratitude, and daily reflections
+                    {t.personalJournalDescription}
                   </p>
                 </div>
                 {selectedMood && (
@@ -474,15 +569,15 @@ export default function Dashboard() {
                     Progress Tracker
                   </h3>
                   <p className="mm-text-small text-muted-foreground">
-                    See your wellness and academic journey
+                    {t.progressTrackerDescription}
                   </p>
                 </div>
                 <div className="text-right">
                   <div className="mm-text-xs text-muted-foreground">
-                    This week
+                    {t.progressWeek}
                   </div>
                   <div className="mm-text-small font-medium text-indigo-500">
-                    +12% improvement
+                    {t.progressImprovement}
                   </div>
                 </div>
               </div>
@@ -510,7 +605,7 @@ export default function Dashboard() {
               <div className="flex flex-col sm:flex-row justify-center mm-gap-2 sm:mm-gap-3 mt-3 sm:mt-4">
                 <Link to="/chat">
                   <Button size="sm" className="mm-btn-primary">
-                    Talk to AI Buddy
+                    {t.lowMoodAction.talkBuddy}
                   </Button>
                 </Link>
                 <Link to="/crisis">
@@ -519,7 +614,7 @@ export default function Dashboard() {
                     variant="outline"
                     className="border-destructive text-destructive"
                   >
-                    Get Help Now
+                    {t.lowMoodAction.getHelp}
                   </Button>
                 </Link>
               </div>

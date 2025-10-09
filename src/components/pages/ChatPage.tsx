@@ -55,8 +55,110 @@ import { bestieChat } from '../../api/services/bestie';
 import Navigation from '../shared/Navigation';
 
 import ConsentModal from '../shared/ConsentModal';
+import LanguageToggle from '../shared/LanguageToggle';
+import { useLanguage } from '../shared/LanguageProvider';
 
+const chatTranslations = {
+  en: {
+    header: {
+      main: 'Chat with Bestie 💙',
+      assessment: 'Wellness Check-in ✨',
+      subtitle: 'Always here for you',
+      languageLabel: 'Language',
+      crisisActive: 'Crisis Support Active',
+      crisisBannerTitle: 'Crisis Support Resources Available 🆘',
+      crisisBannerBody: 'Your safety is our top priority. Professional help is available 24/7 💙',
+      crisisButton: 'Get Help Now',
+    },
+    consentBanner: {
+      enabled: 'Summary sharing enabled',
+      disabled: 'Private mode - no sharing',
+    },
+    quickQuestionsTitle: 'Try asking me…',
+    quickQuestions: {
+      overwhelmed: 'Feeling overwhelmed',
+      studyBreaks: 'Study break ideas',
+      coping: 'Coping strategies',
+      loneliness: 'Feeling lonely',
+    },
+    suggestionsTitle: 'Recommended for you',
+    suggestionCards: {
+      meditation: {
+        title: '5-min guided meditation',
+        body: 'Quick reset for anxious thoughts 🧘',
+        button: 'Start now',
+      },
+      journaling: {
+        title: 'Expressive journaling',
+        body: 'Write your thoughts to process emotions ✍️',
+        button: 'Open journal',
+      },
+      connect: {
+        title: 'Connect with peers',
+        body: 'Join the community to feel less alone 🤝',
+        button: 'Visit community',
+      },
+    },
+    moodPrompt: 'How are you doing today?',
+    moodSubtext: 'Helps me personalise your support',
+    typing: 'Bestie is replying…',
+    placeholder: 'Type how you’re feeling…',
+    send: 'Send',
+  },
+  hi: {
+    header: {
+      main: 'बेस्टी से बात करें 💙',
+      assessment: 'वेलनेस चेक-इन ✨',
+      subtitle: 'हमेशा आपके साथ',
+      languageLabel: 'भाषा',
+      crisisActive: 'आपातकालीन समर्थन सक्रिय',
+      crisisBannerTitle: 'आपातकालीन सहायता संसाधन उपलब्ध 🆘',
+      crisisBannerBody: 'आपकी सुरक्षा हमारी शीर्ष प्राथमिकता है। पेशेवर सहायता 24/7 उपलब्ध है 💙',
+      crisisButton: 'तुरंत सहायता लें',
+    },
+    consentBanner: {
+      enabled: 'सारांश साझा करना सक्रिय',
+      disabled: 'निजी मोड - कोई साझा नहीं',
+    },
+    quickQuestionsTitle: 'मुझसे यह पूछें…',
+    quickQuestions: {
+      overwhelmed: 'मैं बहुत परेशान हूं',
+      studyBreaks: 'स्टडी ब्रेक के सुझाव',
+      coping: 'निपटने की रणनीतियाँ',
+      loneliness: 'अकेलापन महसूस हो रहा है',
+    },
+    suggestionsTitle: 'आपके लिए सुझाव',
+    suggestionCards: {
+      meditation: {
+        title: '5-मिनट निर्देशित ध्यान',
+        body: 'चिंताजनक विचारों के लिए त्वरित राहत 🧘',
+        button: 'अभी शुरू करें',
+      },
+      journaling: {
+        title: 'अभिव्यक्तिपूर्ण जर्नलिंग',
+        body: 'भावनाओं को समझने के लिए अपने मन की बात लिखें ✍️',
+        button: 'जर्नल खोलें',
+      },
+      connect: {
+        title: 'साथियों से जुड़ें',
+        body: 'समुदाय से जुड़ें और अकेलेपन को कम करें 🤝',
+        button: 'समुदाय देखें',
+      },
+    },
+    moodPrompt: 'आज आप कैसे हैं?',
+    moodSubtext: 'मुझे आपकी सहायता व्यक्तिगत बनाने में मदद करता है',
+    typing: 'बेस्टी जवाब दे रहा है…',
+    placeholder: 'आप कैसा महसूस कर रहे हैं लिखें…',
+    send: 'भेजें',
+  },
+} as const;
 
+const quickQuestionTemplates = (t: typeof chatTranslations['en']['quickQuestions']) => [
+  { text: `${t.overwhelmed} 😣`, value: t.overwhelmed.includes('परेशान') ? 'मैं असाइनमेंट से बहुत परेशान हूँ।' : "I'm feeling overwhelmed with assignments." },
+  { text: `${t.studyBreaks} 🎯`, value: t.studyBreaks.includes('ब्रेक') ? 'क्या आप ऐसे छोटे स्टडी ब्रेक बता सकते हैं जो ध्यान केंद्रित करने में मदद करें?' : 'Can you suggest short study breaks that actually help focus?' },
+  { text: `${t.coping} 🧘`, value: t.coping.includes('रणनीतियाँ') ? 'जब मैं चिंतित महसूस करता हूँ तो अच्छी रणनीतियाँ क्या हैं?' : 'What are good coping strategies when I feel anxious?' },
+  { text: `${t.loneliness} 🫶`, value: t.loneliness.includes('अकेलापन') ? 'मैं लोगों के बीच में भी अकेला महसूस करता हूँ।' : 'I feel lonely even when surrounded by people.' },
+];
 
 interface Message {
 
@@ -101,6 +203,22 @@ export default function ChatPage({ assessmentMode = false }: ChatPageProps) {
  const [isConsentOpen, setIsConsentOpen] = useState(false);
 
  const [isInitialConsentRequired, setIsInitialConsentRequired] = useState(false);
+
+ const { language, setLanguage } = useLanguage();
+
+ const t = chatTranslations[language];
+
+ const quickQuestions = quickQuestionTemplates(t.quickQuestions);
+
+
+
+ useEffect(() => {
+
+  localStorage.setItem('chat-language', language);
+
+ }, [language]);
+
+
 
  const handleConsent = (allowed: boolean) => {
 
@@ -719,18 +837,12 @@ export default function ChatPage({ assessmentMode = false }: ChatPageProps) {
 
          <h1 className="font-semibold text-foreground flex items-center gap-2">
 
-          {assessmentMode ? 'Wellness Check-in ✨' : 'Chat with Bestie 💙'}
-
+          {assessmentMode ? t.header.assessment : t.header.main}
          </h1>
-
          <div className="flex items-center gap-2 text-sm">
-
           <div className="w-2 h-2 bg-secondary rounded-full animate-pulse"></div>
-
-          <span className="text-secondary font-medium">Always here for you</span>
-
+          <span className="text-secondary font-medium">{t.header.subtitle}</span>
          </div>
-
         </div>
 
        </div>
@@ -740,15 +852,14 @@ export default function ChatPage({ assessmentMode = false }: ChatPageProps) {
        
 
       <div className="flex items-center gap-2">
+       <LanguageToggle />
 
        {isCrisisDetected && (
 
         <Badge className="bg-destructive text-white animate-pulse">
 
          <AlertTriangle className="h-3 w-3 mr-1" />
-
-         Crisis Support Active
-
+         {t.header.crisisActive}
         </Badge>
 
        )}
@@ -786,24 +897,17 @@ export default function ChatPage({ assessmentMode = false }: ChatPageProps) {
 
        <div className="flex-1">
 
-        <p className="font-semibold">Crisis Support Resources Available 🆘</p>
-
+        <p className="font-semibold">{t.header.crisisBannerTitle}</p>
         <p className="text-sm opacity-90">
-
-         Your safety is our top priority. Professional help is available 24/7 💙
-
+         {t.header.crisisBannerBody}
         </p>
-
        </div>
 
        <Link to="/crisis">
 
         <Button variant="secondary" size="sm" className="bg-white text-destructive hover:bg-white/90 hover:scale-105 transition-all">
-
-         Get Help Now
-
+         {t.header.crisisButton}
         </Button>
-
        </Link>
 
       </div>
@@ -908,7 +1012,7 @@ export default function ChatPage({ assessmentMode = false }: ChatPageProps) {
 
          onKeyPress={handleKeyPress}
 
-         placeholder="Type your message... (Press Enter to send) 💭"
+         placeholder={t.placeholder}
 
          className="pr-24 py-4 text-base border-border/50 focus:border-primary rounded-2xl shadow-lg bg-background/50"
 
@@ -938,7 +1042,9 @@ export default function ChatPage({ assessmentMode = false }: ChatPageProps) {
 
         <Shield className="h-3 w-3" />
 
-        Your conversations are private and encrypted. Bestie is AI-powered support ✨
+        {language === 'en'
+          ? 'Your conversations are private and encrypted. Bestie is AI-powered support ✨'
+          : 'आपकी बातचीत निजी और एन्क्रिप्टेड है। बेस्टी AI-संचालित समर्थन है ✨'}
 
        </p>
 
@@ -978,90 +1084,26 @@ export default function ChatPage({ assessmentMode = false }: ChatPageProps) {
 
      <div className="max-w-4xl mx-auto">
 
-      <div className="flex items-center gap-2 mb-4">
-
-       <Coffee className="h-4 w-4 text-accent" />
-
-       <p className="text-sm text-muted-foreground font-medium">Quick conversation starters:</p>
-
+      <div className="flex flex-col gap-3 bg-card/60 border border-border rounded-3xl p-4 shadow-inner">
+      <p className="text-sm font-medium text-foreground">{t.quickQuestionsTitle}</p>
+      <div className="flex flex-wrap gap-2">
+       {quickQuestions.map(({ text, value }, index) => (
+       <Button
+          key={index}
+          variant="secondary"
+        size="sm"
+          onClick={() => setInputValue(value)}
+          className="bg-white/80 text-primary hover:bg-primary/10"
+        >
+          {index === 0 && <Sparkles className="h-3 w-3 mr-2" />}
+          {index === 1 && <Coffee className="h-3 w-3 mr-2" />}
+          {index === 2 && <BookOpen className="h-3 w-3 mr-2" />}
+          {index === 3 && <Heart className="h-3 w-3 mr-2" />} 
+          {text}
+       </Button>
+       ))}
       </div>
-
-      <div className="flex flex-wrap gap-3">
-
-       <Button
-
-        variant="outline"
-
-        size="sm"
-
-        onClick={() => setInputValue("I'm feeling stressed about exams 📚")}
-
-        className="border-primary text-primary hover:bg-primary/5 hover:scale-105 transition-all"
-
-       >
-
-        <Star className="h-3 w-3 mr-2" />
-
-        Exam stress
-
-       </Button>
-
-       <Button
-
-        variant="outline"
-
-        size="sm"
-
-        onClick={() => setInputValue("I'm having trouble sleeping 😴")}
-
-        className="border-secondary text-secondary hover:bg-secondary/5 hover:scale-105 transition-all"
-
-       >
-
-        <Moon className="h-3 w-3 mr-2" />
-
-        Sleep issues
-
-       </Button>
-
-       <Button
-
-        variant="outline"
-
-        size="sm"
-
-        onClick={() => setInputValue("I want to learn coping strategies ✨")}
-
-        className="border-violet-500 text-violet-500 hover:bg-violet-500/5 hover:scale-105 transition-all"
-
-       >
-
-        <Zap className="h-3 w-3 mr-2" />
-
-        Coping strategies
-
-       </Button>
-
-       <Button
-
-        variant="outline"
-
-        size="sm"
-
-        onClick={() => setInputValue("I feel lonely 🫂")}
-
-        className="border-accent text-accent hover:bg-accent/5 hover:scale-105 transition-all"
-
-       >
-
-        <Heart className="h-3 w-3 mr-2" />
-
-        Feeling lonely
-
-       </Button>
-
       </div>
-
      </div>
 
     </div>
@@ -1073,14 +1115,14 @@ export default function ChatPage({ assessmentMode = false }: ChatPageProps) {
    {/* Bottom Navigation */}
    <div className="sticky bottom-0 left-0 right-0 z-50">
     <Navigation />
-  </div>
- 
-  </div>
- 
-  )}
- 
- </>
- 
-);
- 
+   </div>
+
+    </div>
+
+   )}
+
+  </>
+
+ );
+
 }
