@@ -1,5 +1,5 @@
 import { Link, useLocation } from 'react-router-dom';
-import { Home, MessageCircle, Heart, UserCheck, Users } from 'lucide-react';
+import { Home, MessageCircle, Heart, UserCheck, Users, BookOpen } from 'lucide-react';
 
 interface NavigationProps {
   className?: string;
@@ -17,17 +17,22 @@ export default function Navigation({ className = '' }: NavigationProps) {
     { 
       path: '/chat', 
       icon: MessageCircle, 
-      label: 'AI support'
+      label: 'Bestie Chat'
     },
     { 
-      path: '/mood', 
-      icon: Heart, 
-      label: 'Wellness'
+      path: '/resources',
+      icon: BookOpen,
+      label: 'Resources'
     },
     { 
       path: '/booking', 
       icon: UserCheck, 
       label: 'Counsellor'
+    },
+    { 
+      path: '/mood', 
+      icon: Heart, 
+      label: 'Wellness'
     },
     { 
       path: '/community', 

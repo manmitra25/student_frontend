@@ -390,7 +390,7 @@ export default function Dashboard() {
             <h2 className="mm-text-h2 text-foreground">Wellness Resources</h2>
           </div>
           <div className="grid grid-cols-2 sm:grid-cols-4 gap-2 sm:gap-3">
-            <Link to="/resources/stress-management">
+            <Link to="/mood">
               <Card className="mm-card p-2 sm:p-3 hover:scale-[1.02] transition-all cursor-pointer text-center">
                 <div className="w-8 h-8 sm:w-10 sm:h-10 bg-red-500/20 rounded-lg flex items-center justify-center mx-auto mb-1 sm:mb-2">
                   <Brain className="h-4 w-4 sm:h-5 sm:w-5 text-red-500" />
@@ -400,7 +400,7 @@ export default function Dashboard() {
                 </h4>
               </Card>
             </Link>
-            <Link to="/resources/study-techniques">
+            <Link to="/resources">
               <Card className="mm-card p-2 sm:p-3 hover:scale-[1.02] transition-all cursor-pointer text-center">
                 <div className="w-8 h-8 sm:w-10 sm:h-10 bg-blue-500/20 rounded-lg flex items-center justify-center mx-auto mb-1 sm:mb-2">
                   <BookMarked className="h-4 w-4 sm:h-5 sm:w-5 text-blue-500" />
@@ -410,7 +410,7 @@ export default function Dashboard() {
                 </h4>
               </Card>
             </Link>
-            <Link to="/resources/mindfulness">
+            <Link to="/resources">
               <Card className="mm-card p-2 sm:p-3 hover:scale-[1.02] transition-all cursor-pointer text-center">
                 <div className="w-8 h-8 sm:w-10 sm:h-10 bg-green-500/20 rounded-lg flex items-center justify-center mx-auto mb-1 sm:mb-2">
                   <Heart className="h-4 w-4 sm:h-5 sm:w-5 text-green-500" />
@@ -420,7 +420,7 @@ export default function Dashboard() {
                 </h4>
               </Card>
             </Link>
-            <Link to="/resources/sleep-wellness">
+            <Link to="/mood">
               <Card className="mm-card p-2 sm:p-3 hover:scale-[1.02] transition-all cursor-pointer text-center">
                 <div className="w-8 h-8 sm:w-10 sm:h-10 bg-purple-500/20 rounded-lg flex items-center justify-center mx-auto mb-1 sm:mb-2">
                   <Moon className="h-4 w-4 sm:h-5 sm:w-5 text-purple-500" />

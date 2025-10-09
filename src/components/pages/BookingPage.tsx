@@ -41,8 +41,6 @@ import {
   SelectValue,
 } from "@/components/ui/select"
 
-import Navigation from "../shared/Navigation";
-
 import { getTherapists, Therapist } from "../../api/services/therapists";
 
 import {
@@ -56,6 +54,8 @@ import {
 import LoadingSpinner from "../shared/LoadingSpinner";
 
 import { useApp } from "../../App";
+import Navigation from "../shared/Navigation";
+import { ThemeToggle } from "../ui/theme-toggle";
 
 // --- helpers ---
 function toAmPm(hhmm24: string): string {
@@ -297,8 +297,8 @@ export default function BookingPage() {
     <div className="min-h-screen bg-background text-foreground pb-24">
       <main className="max-w-5xl mx-auto px-4 py-8 space-y-6">
         {/* Header */}
-        <div className="flex items-center justify-between">
-          <div className="flex items-center gap-4">
+        <div className="flex flex-wrap items-center gap-4 justify-between">
+          <div className="flex items-center gap-4 min-w-0">
             <Button
               variant="ghost"
               size="sm"
@@ -307,8 +307,8 @@ export default function BookingPage() {
             >
               <ArrowLeft className="h-5 w-5" />
             </Button>
-            <div>
-              <h1 className="text-3xl font-semibold tracking-tight">
+            <div className="min-w-0">
+              <h1 className="text-2xl sm:text-3xl font-semibold tracking-tight truncate">
                 Professional Counselling
               </h1>
               <p className="text-sm text-muted-foreground">
@@ -316,7 +316,8 @@ export default function BookingPage() {
               </p>
             </div>
           </div>
-          <div className="flex items-center gap-3">
+          <div className="flex items-center gap-3 flex-shrink-0">
+            <ThemeToggle />
             <Badge className="bg-green-100 text-green-700 border-green-200 flex items-center gap-2">
               <Shield className="h-3 w-3" />
               100% Confidential
@@ -378,10 +379,6 @@ export default function BookingPage() {
             </TabsTrigger>
             <TabsTrigger className="rounded-full py-2" value="history">
               Session History ({history.length})
-            </TabsTrigger>
-
-            <TabsTrigger className="rounded-full py-2" value="history">
-              Session History
             </TabsTrigger>
           </TabsList>
 
@@ -791,8 +788,8 @@ export default function BookingPage() {
       </main>
 
       {/* Bottom navigation */}
-      <div className="sticky bottom-0 left-0 right-0 z-30">
-        <Navigation />
+      <div className="sticky bottom-0 left-0 right-0 z-50 bg-card border-t border-border shadow-lg">
+        <Navigation className="bg-card" />
       </div>
 
       {/* Booking Modal */}

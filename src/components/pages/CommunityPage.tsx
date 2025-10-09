@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useEffect, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 
 import { Button } from '../ui/button';
@@ -9,10 +9,10 @@ import { Badge } from '../ui/badge';
 
 import { Input } from '../ui/input';
 
-import { ArrowLeft, Heart, Shield, Hash, MessageCircle, Send, Eye, EyeOff, Volume2, VolumeX, Smile } from 'lucide-react';
+import { ArrowLeft, Heart, MessageCircle, Send, Eye, EyeOff, Volume2, VolumeX } from 'lucide-react';
 
+import { ThemeToggle } from '../ui/theme-toggle';
 import Navigation from '../shared/Navigation';
-
 
 
 const dummyCommunities = [
@@ -89,60 +89,6 @@ const dummyMessages: Record<string, any[]> = {
 
 
 
-const communityHighlights: Record<string, { theme: string; description: string; tagline: string; tags: string[] }> = {
-
- '1': {
-
-  theme: 'Cultivating calm, together',
-
-  description: 'Gentle check-ins, grounding rituals, and a place to share how you truly feel—no pressure, only understanding.',
-
-  tagline: 'Take a mindful pause and let the community hold space for you.',
-
-  tags: ['mindful-moments', 'self-compassion', 'breathing-room'],
-
- },
-
- '2': {
-
-  theme: 'Balancing academics with wellbeing',
-
-  description: 'Swap focus hacks, share study playlists, and keep motivation compassionate—not punishing.',
-
-  tagline: 'You are more than your deadlines; let’s pace the journey together.',
-
-  tags: ['gentle-productivity', 'study-buddies', 'progress-not-perfection'],
-
- },
-
- '3': {
-
-  theme: 'Celebrating creativity without burnout',
-
-  description: 'Reconnect with your creative spark through nourishing prompts, supportive feedback, and cozy co-working.',
-
-  tagline: 'Create with softness—rest is part of the process.',
-
-  tags: ['creative-play', 'restorative-breaks', 'tiny-triumphs'],
-
- },
-
-};
-
-
-
-const supportTips = [
-
- '✨ Share how you would like to be supported today—others can meet you there.',
-
- '🌈 Validate before you advise; a kind word can shift someone’s entire day.',
-
- '🌿 Take what you need and leave what you can. Rest replies are welcome too.',
-
-];
-
-
-
 const channelInsights: Record<string, { mood: string; activeMembers: number; tags: string[]; tip: string }> = {
 
  a: {
@@ -206,10 +152,10 @@ export default function CommunityPage() {
   
  const [likedMessages, setLikedMessages] = useState<string[]>([]);
 
- const [showSupportTips, setShowSupportTips] = useState(true);
-
-  
-
+  const isClient = typeof window !== 'undefined';
+  const defaultDesktop = isClient ? window.innerWidth >= 1024 : false;
+  const [isDesktop, setIsDesktop] = useState(defaultDesktop);
+  const [showSidebar, setShowSidebar] = useState(defaultDesktop);
   
 
   const quickResponses = [
@@ -230,12 +176,37 @@ export default function CommunityPage() {
 
   const selectedChannelData = dummyChannels.find((c) => c._id === selectedChannel);
 
- const selectedCommunity = communityHighlights[selectedCommunityId];
-
  const channelInsight = channelInsights[selectedChannel];
 
  const selectedCommunityMeta = dummyCommunities.find((c) => c._id === selectedCommunityId);
 
+
+
+useEffect(() => {
+   if (!isClient) return;
+
+    const updateLayout = () => {
+      const desktop = window.innerWidth >= 1024;
+      setIsDesktop(desktop);
+      setShowSidebar((prev) => (desktop ? true : prev));
+    };
+
+    updateLayout();
+    window.addEventListener('resize', updateLayout);
+    return () => window.removeEventListener('resize', updateLayout);
+  }, [isClient]);
+
+  useEffect(() => {
+    if (!isClient) return;
+
+    if (!isDesktop && showSidebar) {
+      const originalOverflow = document.body.style.overflow;
+      document.body.style.overflow = 'hidden';
+      return () => {
+        document.body.style.overflow = originalOverflow;
+      };
+    }
+  }, [isClient, isDesktop, showSidebar]);
 
 
  const formatTimestamp = (dateString: string) => {
@@ -337,304 +308,223 @@ export default function CommunityPage() {
 
 
   return (
+  <div className="min-h-screen bg-[radial-gradient(circle_at_top,_var(--background),_var(--muted)_80%)] text-foreground transition-colors duration-300">
+    {/* Header */}
+    <header className="bg-card shadow sticky top-0 z-40 transition-colors duration-300">
+      <div className="max-w-7xl mx-auto px-4 py-4 flex items-center justify-between">
+        <div className="flex items-center gap-4">
+          <Button variant="ghost" size="sm" onClick={() => navigate('/dashboard')}>
+            <ArrowLeft className="h-4 w-4" />
+          </Button>
 
-  <div className="min-h-screen bg-gray-50 transition-colors duration-300">
-
-      {/* Header */}
-
- <header className="bg-white shadow sticky top-0 z-40">
-
-        <div className="max-w-7xl mx-auto px-4 py-4 flex items-center justify-between">
-
-          <div className="flex items-center gap-4">
-
-    <Button variant="ghost" size="sm" onClick={() => navigate('/dashboard')}><ArrowLeft className="h-4 w-4" /></Button>
-
-              <div>
-
-     <h1 className="text-2xl font-bold">{selectedCommunityMeta?.name} 💙</h1>
-
-     <p className="text-sm text-gray-500">{selectedChannelData?.description}</p>
-
-              </div>
-
+          <div>
+            <h1 className="text-2xl font-bold text-foreground">{selectedCommunityMeta?.name} 💙</h1>
+            <p className="text-sm text-muted-foreground">{selectedChannelData?.description}</p>
           </div>
-
-          <div className="flex items-center gap-2">
-
-            <Button variant={isAnonymous ? "default" : "outline"} size="sm" onClick={() => setIsAnonymous(!isAnonymous)}>
-
-              {isAnonymous ? <EyeOff className="h-4 w-4 mr-1" /> : <Eye className="h-4 w-4 mr-1" />}
-
-              {isAnonymous ? 'Anonymous' : 'Visible'}
-
-            </Button>
-
-            <Button variant="ghost" size="sm" onClick={() => setNotifications(!notifications)}>
-
-              {notifications ? <Volume2 className="h-4 w-4" /> : <VolumeX className="h-4 w-4" />}
-
-            </Button>
-
-          </div>
-
         </div>
 
-      </header>
+        <div className="flex items-center gap-2">
+          <Button
+            variant="outline"
+            size="sm"
+            className="lg:hidden"
+            onClick={() => setShowSidebar((prev) => !prev)}
+          >
+            {showSidebar ? 'Hide Channels' : 'Show Channels'}
+          </Button>
+          <ThemeToggle />
+          <Button
+            variant={isAnonymous ? 'default' : 'outline'}
+            size="sm"
+            onClick={() => setIsAnonymous(!isAnonymous)}
+          >
+            {isAnonymous ? <EyeOff className="h-4 w-4 mr-1" /> : <Eye className="h-4 w-4 mr-1" />}
+            {isAnonymous ? 'Anonymous' : 'Visible'}
+          </Button>
 
-
-
- <div className="max-w-7xl mx-auto px-4 py-8 grid grid-cols-1 lg:grid-cols-4 gap-6">
-
-        {/* Sidebar */}
-
-  <aside className="lg:col-span-1 space-y-6 sticky top-28">
-
-   <Card className="p-4 space-y-4">
-
-            <div>
-
-     <label className="block text-sm text-gray-500 mb-2">Select Community</label>
-
-     <select
-
-      className="w-full p-2 border rounded"
-
-      value={selectedCommunityId}
-
-      onChange={(e) => setSelectedCommunityId(e.target.value)}
-
-     >
-
-      {dummyCommunities.map(c => <option key={c._id} value={c._id}>{c.name}</option>)}
-
-              </select>
-
-            </div>
-
-
-
-            <div className="space-y-2">
-
-     {dummyChannels.map(channel => (
-
-                <button
-
-                  key={channel._id}
-
-                  onClick={() => handleChannelChange(channel._id)}
-
-       className={`w-full p-3 rounded-xl text-left transition-colors ${
-
-        selectedChannel === channel._id ? 'bg-blue-50 border border-blue-200 shadow' : 'hover:bg-gray-100'
-
-       }`}
-
-      >
-
-       <p className="font-medium text-gray-800">#{channel.name}</p>
-
-       <p className="text-xs text-gray-500">{channel.description}</p>
-
-                </button>
-
-              ))}
-
-            </div>
-
-
-
-    {/* Channel Insights */}
-
-    <div className="p-3 bg-blue-50 rounded-xl text-sm space-y-1">
-
-     <p className="font-medium text-blue-600">Channel Insight</p>
-
-     <p>{channelInsight?.tip}</p>
-
-     <div className="flex flex-wrap gap-1">
-
-      {channelInsight?.tags.map(tag => (
-
-       <Badge key={tag} className="bg-blue-100 text-blue-700">{tag}</Badge>
-
-      ))}
-
+          <Button variant="ghost" size="sm" onClick={() => setNotifications(!notifications)}>
+            {notifications ? <Volume2 className="h-4 w-4" /> : <VolumeX className="h-4 w-4" />}
+          </Button>
         </div>
-
-            </div>
-
-   </Card>
-
-  </aside>
-
-
-
-  {/* Forum Threads */}
-
-  <main className="lg:col-span-3 flex flex-col gap-4">
-
-   {/* Messages */}
-
-   {messages.map(msg => (
-
-    <Card key={msg._id} className="p-4 space-y-2 hover:shadow-md transition-shadow">
-
-     <div className="flex items-center justify-between">
-
-      <span className="font-semibold">{msg.author}</span>
-
-      <span className="text-xs text-gray-400">{formatTimestamp(msg.createdAt)}</span>
-
-                  </div>
-
-     <p className="text-gray-700">{msg.content}</p>
-
-
-
-     <div className="flex items-center gap-3 mt-2 text-sm">
-
-      <Button
-
-       variant="ghost"
-
-       size="xs"
-
-       className={`${likedMessages.includes(msg._id) ? 'text-red-500' : 'text-gray-500'}`}
-
-       onClick={() => addHeart(msg._id)}
-
-      >
-
-       <Heart className="h-3 w-3 mr-1" /> {msg.hearts}
-
-      </Button>
-
-      <Button variant="ghost" size="xs" onClick={() => addReply(msg._id)}>
-
-       <MessageCircle className="h-3 w-3 mr-1" /> Reply
-
-      </Button>
-
-                  </div>
-
-
-
-                  {msg.replies.length > 0 && (
-
-      <div className="ml-6 mt-2 space-y-1 border-l border-gray-200 pl-2">
-
-       {msg.replies.map((r, i) => (
-
-        <p key={i} className="text-gray-500 text-sm">↪ {r}</p>
-
-       ))}
-
-            </div>
-
-     )}
-
-    </Card>
-
-   ))}
-
-
-
-   {/* Input & Quick Response */}
-
-<Card className="p-4 sticky bottom-0 bg-white shadow flex flex-col gap-2">
-
- <div className="flex items-center gap-2">
-
-              <Input
-
-                value={message}
-
-                onChange={(e) => setMessage(e.target.value)}
-
-   placeholder="Type a message…"
-
-   className="flex-1 py-3 rounded-xl shadow-sm"
-
-                onKeyPress={(e) => { if (e.key === 'Enter') { e.preventDefault(); handleSendMessage(); } }}
-
-  />
-
-  <Button
-
-   variant="ghost"
-
-   size="sm"
-
-   className="h-10 w-10 p-0 flex items-center justify-center"
-
-   onClick={() => setShowQuickResponses(!showQuickResponses)}
-
-  >
-
-   <Heart className="h-4 w-4 text-secondary" />
-
-  </Button>
-
-  <Button
-
-   onClick={handleSendMessage}
-
-   disabled={!message.trim()}
-
-   size="sm"
-
-   className="h-10 w-10 p-0 flex items-center justify-center rounded-xl shadow-sm"
-
-  >
-
-   <Send className="h-5 w-5" />
-
-  </Button>
-
-              </div>
-
-
-
- {/* Only one quick response visible at a time */}
-
- {showQuickResponses && quickResponses.length > 0 && (
-
-  <div className="mt-2">
-
-   <Button
-
-    variant="outline"
-
-    size="sm"
-
-    className="w-full text-left"
-
-    onClick={() => handleQuickResponse(quickResponses[0])} // only show the first one
-
-   >
-
-    {quickResponses[0]}
-
-   </Button>
-
-                </div>
-
- )}
-
-          </Card>
-
-
-
-  </main>
-
-        </div>
-
       </div>
+    </header>
 
-  );
+    {/* Layout Grid */}
+    <div className="max-w-7xl mx-auto px-4 py-8 grid grid-cols-1 lg:grid-cols-4 gap-6">
+      {/* Sidebar */}
+      {showSidebar && (
+        <>
+          {!isDesktop && (
+            <div
+              className="fixed inset-0 bg-black/40 backdrop-blur-sm z-30 lg:hidden"
+              onClick={() => setShowSidebar(false)}
+            />
+          )}
+          <aside
+            className={
+              isDesktop
+                ? 'lg:col-span-1 space-y-6 lg:sticky lg:top-28'
+                : 'fixed inset-x-4 top-24 bottom-6 z-40'
+            }
+          >
+            <Card className="p-4 space-y-4 bg-card shadow-xl border transition-colors max-h-[calc(100vh-8rem)] overflow-y-auto">
+              <div className="lg:hidden flex justify-between items-center">
+                <p className="text-sm font-medium text-muted-foreground">Communities & Channels</p>
+                <Button variant="ghost" size="sm" onClick={() => setShowSidebar(false)}>
+                  Close
+                </Button>
+              </div>
+              <div>
+                <label className="block text-sm text-muted-foreground mb-2">Select Community</label>
+                <select
+                  className="w-full p-2 rounded border border-border bg-background text-foreground"
+                  value={selectedCommunityId}
+                  onChange={(e) => setSelectedCommunityId(e.target.value)}
+                >
+                  {dummyCommunities.map((c) => (
+                    <option key={c._id} value={c._id}>{c.name}</option>
+                  ))}
+                </select>
+              </div>
+
+              <div className="space-y-2">
+                {dummyChannels.map((channel) => (
+                  <button
+                    key={channel._id}
+                    onClick={() => {
+                      handleChannelChange(channel._id);
+                      if (!isDesktop) {
+                        setShowSidebar(false);
+                      }
+                    }}
+                    className={`w-full p-3 rounded-xl text-left transition-all border ${
+                      selectedChannel === channel._id
+                        ? 'border-primary bg-primary/10 shadow focus-visible:outline-ring'
+                        : 'border-transparent hover:bg-muted'
+                    }`}
+                  >
+                    <p className="font-medium text-foreground">#{channel.name}</p>
+                    <p className="text-xs text-muted-foreground">{channel.description}</p>
+                  </button>
+                ))}
+              </div>
+
+              {/* Channel Insights */}
+              <div className="p-3 bg-secondary/10 rounded-xl text-sm space-y-1 border border-secondary/30">
+                <p className="font-medium text-foreground">Channel Insight</p>
+                <p className="text-muted-foreground">{channelInsight?.tip}</p>
+                <div className="flex flex-wrap gap-1">
+                  {channelInsight?.tags.map((tag) => (
+                    <Badge
+                      key={tag}
+                      className="rounded-full bg-secondary/10 text-foreground"
+                    >
+                      {tag}
+                    </Badge>
+                  ))}
+                </div>
+              </div>
+            </Card>
+          </aside>
+        </>
+      )}
+
+      {/* Forum Threads */}
+      <main className={`flex flex-col gap-4 ${isDesktop ? 'lg:col-span-3' : 'col-span-1'}`}>
+        {/* Messages */}
+        {messages.map((msg) => (
+          <Card
+            key={msg._id}
+            className="p-4 space-y-2 bg-card hover:shadow-md transition-all border"
+          >
+            <div className="flex items-center justify-between">
+              <span className="font-semibold text-foreground">{msg.author}</span>
+              <span className="text-xs text-muted-foreground">{formatTimestamp(msg.createdAt)}</span>
+            </div>
+            <p className="text-foreground/90">{msg.content}</p>
+
+            <div className="flex items-center gap-3 mt-2 text-sm">
+              <Button
+                variant="ghost"
+                size="xs"
+                className={likedMessages.includes(msg._id) ? 'text-red-500' : 'text-muted-foreground'}
+                onClick={() => addHeart(msg._id)}
+              >
+                <Heart className="h-3 w-3 mr-1" /> {msg.hearts}
+              </Button>
+              <Button variant="ghost" size="xs" onClick={() => addReply(msg._id)}>
+                <MessageCircle className="h-3 w-3 mr-1" /> Reply
+              </Button>
+            </div>
+
+            {msg.replies.length > 0 && (
+              <div className="ml-6 mt-2 space-y-1 border-l border-border pl-2">
+                {msg.replies.map((r, i) => (
+                  <p key={i} className="text-muted-foreground text-sm">↪ {r}</p>
+                ))}
+              </div>
+            )}
+          </Card>
+        ))}
+
+        {/* Input & Quick Response */}
+        <Card className="p-4 sticky bottom-0 bg-card border-t border-border shadow flex flex-col gap-2">
+          <div className="flex items-center gap-2">
+            <Input
+              value={message}
+              onChange={(e) => setMessage(e.target.value)}
+              placeholder="Type a message…"
+              className="flex-1 py-3 rounded-xl shadow-sm bg-background text-foreground placeholder:text-muted-foreground"
+              onKeyPress={(e) => {
+                if (e.key === 'Enter') {
+                  e.preventDefault();
+                  handleSendMessage();
+                }
+              }}
+            />
+
+            <Button
+              variant="ghost"
+              size="sm"
+              className="h-10 w-10 p-0 flex items-center justify-center"
+              onClick={() => setShowQuickResponses(!showQuickResponses)}
+            >
+              <Heart className="h-4 w-4 text-secondary" />
+            </Button>
+
+            <Button
+              onClick={handleSendMessage}
+              disabled={!message.trim()}
+              size="sm"
+              className="h-10 w-10 p-0 flex items-center justify-center rounded-xl shadow-sm"
+            >
+              <Send className="h-5 w-5" />
+            </Button>
+          </div>
+
+          {showQuickResponses && quickResponses.length > 0 && (
+            <div className="mt-2">
+              {quickResponses.map((quickResponse) => (
+                <Button
+                  key={quickResponse}
+                  variant="outline"
+                  size="sm"
+                  className="w-full text-left border-border bg-background text-foreground"
+                  onClick={() => handleQuickResponse(quickResponse)}
+                >
+                  {quickResponse}
+                </Button>
+              ))}
+            </div>
+          )}
+        </Card>
+      </main>
+    </div>
+
+    <div className="sticky bottom-0 left-0 right-0 z-50">
+      <Navigation />
+    </div>
+  </div>
+);
 
 }
-
-
-

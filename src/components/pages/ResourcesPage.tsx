@@ -625,7 +625,7 @@ export default function ResourcesPage() {
       </main>
 
       {/* Bottom Navigation */}
-      <div className="fixed bottom-0 left-0 right-0 z-50 md:hidden">
+      <div className="sticky bottom-0 left-0 right-0 z-50">
         <Navigation />
       </div>
 
