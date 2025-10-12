@@ -237,7 +237,7 @@ export default function LandingPage() {
             </div>
 
             <div className="flex flex-col sm:flex-row gap-6 justify-center items-center">
-              <Link to="/register">
+              <Link to="/login">
                 <Button
                   size="lg"
                   className="btn-primary px-12 py-6 text-lg hover:scale-105 transition-transform text-white"
