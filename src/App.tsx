@@ -3,6 +3,7 @@ import { BrowserRouter as Router, Routes, Route, Navigate } from 'react-router-d
 import { useState, createContext, useContext, useCallback } from 'react';
 import './styles/globals.css';
 import { ThemeProvider } from './components/providers/ThemeProvider';
+import { Analytics } from "@vercel/analytics/react";
 
 // Import pages
 import LandingPage from './components/pages/LandingPage';
@@ -275,6 +276,7 @@ export default function App() {
             </Routes>
           </div>
         </Router>
+        <Analytics/>
       </AppContext.Provider>
     </ThemeProvider>
   );
