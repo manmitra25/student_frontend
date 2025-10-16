@@ -21,6 +21,7 @@ import {
   Sparkles,
   ArrowRight,
   Play,
+  X,
   Award,
   Lock,
   Clock,
@@ -134,6 +135,7 @@ const containerClass = "mx-auto w-full max-w-7xl px-4 sm:px-6 lg:px-8";
 export default function LandingPage() {
   const [currentTestimonial, setCurrentTestimonial] = useState(0);
   const [isVisible, setIsVisible] = useState(false);
+  const [showVideo, setShowVideo] = useState(false);
 
   useEffect(() => {
     setIsVisible(true);
@@ -249,12 +251,45 @@ export default function LandingPage() {
               <Button
                 variant="outline"
                 size="lg"
+                onClick={() => setShowVideo(true)}
                 className="px-12 py-6 text-lg border-2 border-primary/30 hover:border-primary/50 hover:bg-primary/5 transition-all"
               >
                 <Play className="mr-3 h-5 w-5" />
                 Watch Demo
               </Button>
             </div>
+            {/* 🎥 YouTube Video Modal */}
+            {/* 🎥 YouTube Video Modal */}
+         {showVideo && (
+  <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/80 backdrop-blur-sm px-4">
+    {/* Modal container */}
+    <div className="relative w-full max-w-4xl rounded-2xl shadow-2xl overflow-hidden"
+         style={{ height: 'auto', maxHeight: '90vh' }}>
+      {/* Close button */}
+      <button
+        onClick={() => setShowVideo(false)}
+        className="absolute top-3 right-3 z-50 text-white bg-black/50 hover:bg-black/70 p-2 rounded-full transition"
+        aria-label="Close Video"
+      >
+        <X className="w-6 h-6" />
+      </button>
+
+      {/* YouTube iframe wrapper to maintain 16:9 */}
+      <div className="relative w-full" style={{ paddingTop: '56.25%' }}>
+        <iframe
+          className="absolute top-0 left-0 w-full h-full"
+          src="https://www.youtube.com/embed/4Z1VWc9OEi0?autoplay=1"
+          title="ManMitra Demo"
+          allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
+          allowFullScreen
+        ></iframe>
+      </div>
+    </div>
+  </div>
+)}
+
+
+
 
             {/* Trust Indicators */}
             <div className="flex flex-wrap justify-center items-center gap-8 pt-8 border-t border-border/30 max-w-2xl mx-auto">
