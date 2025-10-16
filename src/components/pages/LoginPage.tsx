@@ -232,7 +232,14 @@ export default function LoginPage() {
               )}
             </Button>
 
-            {step === "otp" && (
+            {isLoading && (
+  <p className="text-center mm-text-base font-semibold text-primary animate-pulse mt-4">
+    {step === "login"
+      ? "Hold tight! We’re logging you in..."
+      : "Almost there! Logging you in, please wait..."}
+  </p>
+)}
+            {step === "otp" && (  
               <div className="text-center mm-text-small text-muted-foreground">
                 OTP has been sent to your email. Please enter it above to
                 complete login.

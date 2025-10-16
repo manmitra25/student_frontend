@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef, useMemo } from 'react';
 import { Link } from 'react-router-dom';
 import { Button } from '../ui/button';
 import { Card } from '../ui/card';
@@ -392,6 +392,8 @@ export default function ResourcesPage() {
   const [selectedVideoUrl, setSelectedVideoUrl] = useState('');
   const [selectedResourceTitle, setSelectedResourceTitle] = useState('');
   const { language } = useLanguage();
+  const resourceRefs = useRef<Record<number, HTMLDivElement | null>>({});
+  const resourcesTopRef = useRef<HTMLDivElement | null>(null);
 
   const t = translations[language];
 
@@ -440,13 +442,67 @@ export default function ResourcesPage() {
     };
   }, [isModalOpen]);
 
-  const filteredResources = allResources.filter(resource => {
-    const matchesSearch = resource.title[language].toLowerCase().includes(searchQuery.toLowerCase()) ||
-                         resource.description[language].toLowerCase().includes(searchQuery.toLowerCase());
-    const matchesCategory = !selectedCategory || resource.category === selectedCategory;
-    const matchesSaved = !showSavedOnly || savedResources.has(resource.id);
-    return matchesSearch && matchesCategory && matchesSaved;
-  });
+  const filteredResources = useMemo(() => {
+    const searchTerm = searchQuery.trim().toLowerCase();
+
+    return allResources.filter((resource) => {
+      const matchesSearch =
+        searchTerm.length === 0 ||
+        resource.title[language].toLowerCase().includes(searchTerm) ||
+        resource.description[language].toLowerCase().includes(searchTerm);
+
+      const matchesCategory = !selectedCategory || resource.category === selectedCategory;
+      const matchesSaved = !showSavedOnly || savedResources.has(resource.id);
+
+      return matchesSearch && matchesCategory && matchesSaved;
+    });
+  }, [language, searchQuery, selectedCategory, showSavedOnly, savedResources]);
+
+  const selectedCategoryLabel = selectedCategory
+    ? categories.find((category) => category.id === selectedCategory)?.name[language] ?? t.allResources
+    : t.allResources;
+
+  useEffect(() => {
+    const headerOffset = 120;
+
+    const scrollToPosition = (position: number) => {
+      window.scrollTo({
+        top: position,
+        behavior: 'smooth',
+      });
+    };
+
+    const scrollToResourceSectionTop = () => {
+      if (!resourcesTopRef.current) return;
+
+      const elementPosition =
+        resourcesTopRef.current.getBoundingClientRect().top + window.scrollY;
+      scrollToPosition(elementPosition - headerOffset);
+    };
+
+    if (!selectedCategory) {
+      scrollToResourceSectionTop();
+      return;
+    }
+
+    const firstResourceInCategory = filteredResources.find(
+      (resource) => resource.category === selectedCategory
+    );
+
+    if (!firstResourceInCategory) {
+      scrollToResourceSectionTop();
+      return;
+    }
+
+    const target = resourceRefs.current[firstResourceInCategory.id];
+    if (!target) {
+      scrollToResourceSectionTop();
+      return;
+    }
+
+    const elementPosition = target.getBoundingClientRect().top + window.scrollY;
+    scrollToPosition(elementPosition - headerOffset);
+  }, [filteredResources, selectedCategory]);
 
   const toggleSave = (resourceId: number) => {
     setSavedResources(prev => {
@@ -457,6 +513,21 @@ export default function ResourcesPage() {
         newSet.add(resourceId);
       }
       return newSet;
+    });
+  };
+
+  const handleScrollToResource = (resourceId: number) => {
+    const target = resourceRefs.current[resourceId];
+
+    if (!target) return;
+
+    const headerOffset = 120;
+    const elementPosition = target.getBoundingClientRect().top + window.scrollY;
+    const offsetPosition = elementPosition - headerOffset;
+
+    window.scrollTo({
+      top: offsetPosition,
+      behavior: 'smooth',
     });
   };
 
@@ -549,8 +620,8 @@ export default function ResourcesPage() {
         </div>
 
         {/* Featured This Week */}
-        {!selectedCategory && !showSavedOnly && (
-          <section className="mb-8">
+        {!showSavedOnly && (
+          <section className="mb-8" aria-label={language === 'en' ? 'Browse by topic' : 'विषय के अनुसार ब्राउज़ करें'}>
             <div className="flex items-center mm-gap-2 mb-6">
               <h2 className="mm-text-h2 text-foreground">{t.featuredTitle}</h2>
               <Badge className="bg-accent text-white">{t.featuredBadge}</Badge>
@@ -560,7 +631,11 @@ export default function ResourcesPage() {
               {featuredResources.map((resource) => {
                 const TypeIcon = getTypeIcon(resource.type);
                 return (
-                  <Card key={resource.id} className="mm-card mm-p-3 group cursor-pointer hover:scale-[1.02] transition-all relative overflow-hidden">
+                  <Card
+                    key={resource.id}
+                    className="mm-card mm-p-3 group cursor-pointer hover:scale-[1.02] transition-all relative overflow-hidden"
+                    onClick={() => handleScrollToResource(resource.id)}
+                  >
                     <div className="absolute top-0 right-0 w-16 h-16 bg-gradient-to-br from-accent/20 to-transparent rounded-bl-3xl"></div>
                     
                     <div className="flex items-start justify-between mb-4">
@@ -673,11 +748,7 @@ export default function ResourcesPage() {
         <section>
           <div className="flex items-center justify-between mb-6">
             <h2 className="mm-text-h2 text-foreground">
-              {showSavedOnly ? t.savedResources :
-               selectedCategory 
-                ? categories.find(c => c.id === selectedCategory)?.name || t.allResources
-                : t.allResources
-              }
+              {showSavedOnly ? t.savedResources : selectedCategoryLabel}
             </h2>
             <p className="mm-text-small text-muted-foreground">
               {t.resourcesCount(filteredResources.length)}
@@ -703,86 +774,97 @@ export default function ResourcesPage() {
               }}
             />
           ) : (
-            <div className="space-y-4">
+            <div className="space-y-4" ref={resourcesTopRef}>
               {filteredResources.map((resource) => {
                 const TypeIcon = getTypeIcon(resource.type);
                 const isSaved = savedResources.has(resource.id);
                 
                 return (
-                  <Card key={resource.id} className="mm-card mm-p-3 hover:scale-[1.005] transition-all group">
-                    <div className="flex items-start mm-gap-4">
-                      <div className={`w-16 h-16 ${getTypeColor(resource.type)} rounded-xl flex items-center justify-center flex-shrink-0 shadow-lg group-hover:scale-105 transition-transform`}>
-                        <TypeIcon className="h-8 w-8 text-white" />
-                      </div>
-                      
-                      <div className="flex-1">
-                        <div className="flex items-start justify-between mb-2">
-                          <div className="flex-1 mr-4">
-                            <div className="flex items-center mm-gap-2 mb-1">
-                              <h3 className="mm-text-h3 text-foreground">{resource.title[language]}</h3>
-                              {resource.isNew && (
-                                <Badge className="bg-accent text-white mm-text-xs">{language === 'en' ? 'New' : 'नया'}</Badge>
-                              )}
+                  <div
+                    key={resource.id}
+                    ref={(element) => {
+                      if (element) {
+                        resourceRefs.current[resource.id] = element;
+                      } else {
+                        delete resourceRefs.current[resource.id];
+                      }
+                    }}
+                  >
+                    <Card className="mm-card mm-p-3 hover:scale-[1.005] transition-all group">
+                      <div className="flex items-start mm-gap-4">
+                        <div className={`w-16 h-16 ${getTypeColor(resource.type)} rounded-xl flex items-center justify-center flex-shrink-0 shadow-lg group-hover:scale-105 transition-transform`}>
+                          <TypeIcon className="h-8 w-8 text-white" />
+                        </div>
+
+                        <div className="flex-1">
+                          <div className="flex items-start justify-between mb-2">
+                            <div className="flex-1 mr-4">
+                              <div className="flex items-center mm-gap-2 mb-1">
+                                <h3 className="mm-text-h3 text-foreground">{resource.title[language]}</h3>
+                                {resource.isNew && (
+                                  <Badge className="bg-accent text-white mm-text-xs">{language === 'en' ? 'New' : 'नया'}</Badge>
+                                )}
+                              </div>
+                              <p className="mm-text-small text-muted-foreground mb-3 leading-relaxed">
+                                {resource.description[language]}
+                              </p>
+                              <div className="flex items-center mm-gap-2 mm-text-xs text-muted-foreground">
+                                <span>{t.availableIn(resource.language)}</span>
+                                <span>•</span>
+                                <span>{t.saves(resource.saves)}</span>
+                              </div>
                             </div>
-                            <p className="mm-text-small text-muted-foreground mb-3 leading-relaxed">
-                              {resource.description[language]}
-                            </p>
-                            <div className="flex items-center mm-gap-2 mm-text-xs text-muted-foreground">
-                              <span>{t.availableIn(resource.language)}</span>
-                              <span>•</span>
-                              <span>{t.saves(resource.saves)}</span>
+
+                            <div className="flex items-center mm-gap-2">
+                              <div className="flex items-center gap-1 mm-text-small">
+                                <Star className="h-4 w-4 text-yellow-500 fill-current" />
+                                <span className="text-muted-foreground">{resource.rating}</span>
+                              </div>
+                              <button
+                                onClick={() => toggleSave(resource.id)}
+                                className="p-2 hover:bg-muted rounded-lg transition-colors"
+                              >
+                                {isSaved ? (
+                                  <BookmarkCheck className="h-5 w-5 text-primary" />
+                                ) : (
+                                  <Bookmark className="h-5 w-5 text-muted-foreground" />
+                                )}
+                              </button>
                             </div>
                           </div>
-                          
-                          <div className="flex items-center mm-gap-2">
-                            <div className="flex items-center gap-1 mm-text-small">
-                              <Star className="h-4 w-4 text-yellow-500 fill-current" />
-                              <span className="text-muted-foreground">{resource.rating}</span>
+
+                          <div className="flex items-center justify-between">
+                            <div className="flex items-center mm-gap-3 mm-text-small text-muted-foreground">
+                              <div className="flex items-center gap-1">
+                                <Clock className="h-4 w-4" />
+                                {resource.duration[language]}
+                              </div>
+                              <Badge className={getDifficultyColor(resource.difficulty)}>
+                                {language === 'en'
+                                  ? resource.difficulty
+                                  : resource.difficulty === 'Beginner'
+                                  ? 'शुरुआती'
+                                  : resource.difficulty === 'Intermediate'
+                                  ? 'मध्यम'
+                                  : resource.difficulty === 'Important'
+                                  ? 'महत्वपूर्ण'
+                                  : resource.difficulty}
+                              </Badge>
                             </div>
-                            <button
-                              onClick={() => toggleSave(resource.id)}
-                              className="p-2 hover:bg-muted rounded-lg transition-colors"
+
+                            <Button
+                              size="sm"
+                              className="mm-btn-primary mm-btn-sm group-hover:scale-105 transition-transform"
+                              onClick={() => handleStartResource(resource.title)}
                             >
-                              {isSaved ? (
-                                <BookmarkCheck className="h-5 w-5 text-primary" />
-                              ) : (
-                                <Bookmark className="h-5 w-5 text-muted-foreground" />
-                              )}
-                            </button>
+                              <Play className="h-4 w-4 mr-1" />
+                              {t.start}
+                            </Button>
                           </div>
-                        </div>
-                        
-                        <div className="flex items-center justify-between">
-                          <div className="flex items-center mm-gap-3 mm-text-small text-muted-foreground">
-                            <div className="flex items-center gap-1">
-                              <Clock className="h-4 w-4" />
-                              {resource.duration[language]}
-                            </div>
-                            <Badge className={getDifficultyColor(resource.difficulty)}>
-                              {language === 'en'
-                                ? resource.difficulty
-                                : resource.difficulty === 'Beginner'
-                                ? 'शुरुआती'
-                                : resource.difficulty === 'Intermediate'
-                                ? 'मध्यम'
-                                : resource.difficulty === 'Important'
-                                ? 'महत्वपूर्ण'
-                                : resource.difficulty}
-                            </Badge>
-                          </div>
-                          
-                          <Button 
-                            size="sm" 
-                            className="mm-btn-primary mm-btn-sm group-hover:scale-105 transition-transform"
-                            onClick={() => handleStartResource(resource.title)}
-                          >
-                            <Play className="h-4 w-4 mr-1" />
-                            {t.start}
-                          </Button>
                         </div>
                       </div>
-                    </div>
-                  </Card>
+                    </Card>
+                  </div>
                 );
               })}
             </div>

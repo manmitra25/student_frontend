@@ -21,6 +21,16 @@ import {
 } from 'lucide-react';
 
 const crisisResources = [
+    {
+    id: 'tele-manas',
+    name: 'Tele MANAS Helpline',
+    phone: '14416',
+    description: 'Government of India’s 24×7 toll-free mental health helpline offering immediate psychological support, counseling, and referral services.',
+    availability: '24/7',
+    type: 'mental-health',
+    languages: ['English', 'Hindi', 'Regional Languages'],
+    category: 'Mental Health Support'
+  },
   {
     id: 'national-suicide-prevention',
     name: 'National Suicide Prevention Lifeline',
@@ -38,7 +48,7 @@ const crisisResources = [
     description: 'Free crisis counseling via text',
     availability: '24/7',
     type: 'text',
-    languages: ['English', 'Spanish'],
+    languages: ['English', 'Hindi'],
     category: 'Text Support'
   },
   {
@@ -54,7 +64,7 @@ const crisisResources = [
   {
     id: 'student-counseling',
     name: 'Campus Counseling Services',
-    phone: '(Your College Number)',
+    phone: '98765',
     description: 'On-campus mental health support',
     availability: 'Business Hours',
     type: 'counseling',
@@ -170,7 +180,7 @@ export default function CrisisPage() {
                 className="w-full crisis-support mb-3"
               >
                 <Phone className="h-4 w-4 mr-2" />
-                Call 988 - Suicide Prevention
+                Call 14416 - TeleManas
               </Button>
               <Button
                 onClick={() => handleCallResource('911')}
